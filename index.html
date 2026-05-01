@@ -1,589 +1,887 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sport-Timer</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" sizes="192x192" href="icon-192.png">
-    <meta name="theme-color" content="#4CAF50">
-    <style>
-        /* === CSS-VARIABLEN (Light/Dark) === */
-        :root, [data-theme="light"] {
-            --bg:           #f4f4f4;
-            --surface:      #ffffff;
-            --text:         #222222;
-            --text-muted:   #555555;
-            --border:       #dddddd;
-            --accent:       #4CAF50;
-            --accent-dark:  #388E3C;
-            --btn-bg:       #4CAF50;
-            --btn-text:     #ffffff;
-            --btn-hover:    #388E3C;
-            --danger:       #e53935;
-            --danger-hover: #b71c1c;
-            --pause-btn:    #f57c00;
-            --pause-hover:  #e65100;
-            --work-color:   #fff9c4;
-            --pause-color:  #c8e6c9;
-            --active-row:   #ffe082;
-            --done-row:     #e0e0e0;
-            --timer-text:   #1a1a1a;
-            --shadow:       0 2px 8px rgba(0,0,0,0.10);
-        }
-        [data-theme="dark"] {
-            --bg:           #1a1a2e;
-            --surface:      #16213e;
-            --text:         #e0e0e0;
-            --text-muted:   #9e9e9e;
-            --border:       #2a2a4a;
-            --accent:       #4CAF50;
-            --accent-dark:  #66BB6A;
-            --btn-bg:       #388E3C;
-            --btn-text:     #ffffff;
-            --btn-hover:    #4CAF50;
-            --danger:       #ef5350;
-            --danger-hover: #e53935;
-            --pause-btn:    #f57c00;
-            --pause-hover:  #ff9800;
-            --work-color:   #2e2a00;
-            --pause-color:  #0a2e0a;
-            --active-row:   #4a3900;
-            --done-row:     #2a2a2a;
-            --timer-text:   #e0e0e0;
-            --shadow:       0 2px 8px rgba(0,0,0,0.40);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSA Sport</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" sizes="192x192" href="icon-192.png">
+  <meta name="theme-color" content="#4CAF50">
+  <style>
+    :root, [data-theme="light"] {
+      --bg: #f4f4f4; --surface: #ffffff; --surface2: #eeeeee;
+      --text: #222; --text-muted: #666; --border: #ddd;
+      --accent: #4CAF50; --accent-dark: #388E3C;
+      --btn-pause: #f57c00; --btn-stop: #e53935;
+      --work-color: #fff9c4; --pause-color: #c8e6c9;
+      --active-row: #ffe082; --done-row: #eee; --done-text: #999;
+      --shadow: 0 2px 8px rgba(0,0,0,0.10);
+      --nav-h: 56px; --drawer-w: 280px;
+    }
+    [data-theme="dark"] {
+      --bg: #1a1a2e; --surface: #16213e; --surface2: #0f3460;
+      --text: #e0e0e0; --text-muted: #9e9e9e; --border: #2a2a4a;
+      --accent: #4CAF50; --accent-dark: #66BB6A;
+      --btn-pause: #f57c00; --btn-stop: #ef5350;
+      --work-color: #2e2a00; --pause-color: #0a2e0a;
+      --active-row: #4a3900; --done-row: #2a2a2a; --done-text: #666;
+      --shadow: 0 2px 8px rgba(0,0,0,0.40);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
 
-        /* === RESET & BASE === */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            transition: background 0.3s, color 0.3s;
-        }
+    /* NAV */
+    .nav { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h);
+      background: var(--surface); border-bottom: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; z-index: 100; box-shadow: var(--shadow); }
+    .nav-title { font-size: 1.3rem; font-weight: 700; color: var(--accent); cursor: pointer; }
+    .nav-btn { width: 44px; height: 44px; display: flex; align-items: center;
+      justify-content: center; background: none; border: none; cursor: pointer;
+      font-size: 1.4rem; color: var(--text); border-radius: 8px; transition: background .2s; }
+    .nav-btn:hover { background: var(--surface2); }
 
-        /* === LAYOUT === */
-        .app-grid {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 0 8px 16px;
-        }
+    /* DRAWER */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200;
+      opacity: 0; pointer-events: none; transition: opacity .3s; }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; top: 0; right: 0; width: var(--drawer-w); max-width: 85vw;
+      height: 100%; background: var(--surface); z-index: 201;
+      transform: translateX(100%); transition: transform .3s;
+      display: flex; flex-direction: column; box-shadow: -4px 0 16px rgba(0,0,0,.2);
+      overflow-y: auto; }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header { padding: 20px 16px 12px; border-bottom: 1px solid var(--border);
+      font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .drawer-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      cursor: pointer; border: none; background: none; color: var(--text);
+      font-size: .95rem; text-align: left; width: 100%; min-height: 48px;
+      border-bottom: 1px solid var(--border); transition: background .2s; }
+    .drawer-item:hover { background: var(--surface2); }
+    .drawer-setting { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .drawer-setting-label { display: flex; align-items: center; justify-content: space-between;
+      font-size: .88rem; color: var(--text-muted); margin-bottom: 6px; }
+    .toggle { appearance: none; width: 44px; height: 24px; background: var(--border);
+      border-radius: 12px; position: relative; cursor: pointer; flex-shrink: 0;
+      transition: background .3s; }
+    .toggle::after { content: ''; position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left .3s; }
+    .toggle:checked { background: var(--accent); }
+    .toggle:checked::after { left: 23px; }
+    #vol-slider { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
-        /* Kopfzeile */
-        .control-grid {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 2px solid var(--accent);
-            margin-bottom: 12px;
-        }
-        .modul-menu-grid {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--accent);
-            letter-spacing: 1px;
-        }
-        .mode-grid { display: flex; align-items: center; gap: 10px; }
+    /* MAIN */
+    .main { margin-top: var(--nav-h); min-height: calc(100vh - var(--nav-h));
+      padding: 16px; max-width: 700px; margin-left: auto; margin-right: auto; }
 
-        /* Theme-Schalter */
-        .theme-switch {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        #theme-toggle {
-            appearance: none;
-            width: 40px; height: 22px;
-            background: var(--border);
-            border-radius: 11px;
-            position: relative;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        #theme-toggle::after {
-            content: '';
-            position: absolute;
-            top: 3px; left: 3px;
-            width: 16px; height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            transition: left 0.3s;
-        }
-        #theme-toggle:checked { background: var(--accent); }
-        #theme-toggle:checked::after { left: 21px; }
+    /* SHARED COMPONENTS */
+    .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .view-title { font-size: 1.1rem; font-weight: 700; }
+    .section-label { font-size: .75rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .8px; margin: 16px 0 8px; }
+    .btn-fab { width: 44px; height: 44px; border-radius: 50%; background: var(--accent);
+      color: #fff; border: none; font-size: 1.6rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow); transition: background .2s; }
+    .btn-fab:hover { background: var(--accent-dark); }
+    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); cursor: pointer; font-size: .88rem; min-height: 44px; margin-bottom: 16px; }
+    .btn-back:hover { background: var(--surface2); }
+    .btn-primary { width: 100%; padding: 13px; background: var(--accent); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; min-height: 50px; transition: background .2s; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-secondary { width: 100%; padding: 13px; background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 10px; font-size: .95rem; font-weight: 600;
+      cursor: pointer; min-height: 50px; margin-top: 8px; transition: background .2s; }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-sm { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer;
+      font-size: .82rem; font-weight: 600; min-height: 36px; transition: background .2s; }
+    .btn-edit { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-edit:hover { background: var(--border); }
+    .btn-del { background: #ffebee; color: #c62828; }
+    .btn-del:hover { background: #ffcdd2; }
+    [data-theme="dark"] .btn-del { background: #3e1010; color: #ef9a9a; }
+    [data-theme="dark"] .btn-del:hover { background: #5a1a1a; }
+    .progress-wrap { height: 4px; background: var(--border); border-radius: 2px; margin: 8px 0; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty-icon { font-size: 3rem; margin-bottom: 10px; }
 
-        /* Modul-Container */
-        .modul-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .modul-control-grid {
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 10px 14px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
+    /* CARDS */
+    .card { background: var(--surface); border-radius: 12px; padding: 14px;
+      margin-bottom: 10px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .card-title { font-weight: 700; font-size: 1rem; }
+    .badge { font-size: .7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .badge-timer { background: #e8f5e9; color: #2e7d32; }
+    .badge-ex    { background: #e3f2fd; color: #1565c0; }
+    [data-theme="dark"] .badge-timer { background: #1b5e20; color: #a5d6a7; }
+    [data-theme="dark"] .badge-ex    { background: #0d47a1; color: #90caf9; }
+    .card-info { font-size: .83rem; color: var(--text-muted); margin-bottom: 8px; }
+    .card-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .img-preview { width: 100%; max-height: 140px; object-fit: cover; border-radius: 8px; margin: 6px 0; }
 
-        /* Lautstärke */
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        #volume-slider {
-            flex: 1;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
+    /* FORMS */
+    .form-card { background: var(--surface); border-radius: 12px; padding: 16px;
+      box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: .85rem; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 5px; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--text); font-size: .95rem; min-height: 44px;
+      transition: border-color .2s; font-family: inherit; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus
+      { outline: none; border-color: var(--accent); }
+    .form-textarea { min-height: 100px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* Haupt-Arbeitsbereich */
-        .work-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
+    /* TYPE PICKER */
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .type-card { background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
+      padding: 20px 12px; text-align: center; cursor: pointer; transition: border-color .2s;
+      min-height: 90px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; }
+    .type-card:hover { border-color: var(--accent); background: var(--surface2); }
+    .type-icon { font-size: 2rem; }
+    .type-label { font-size: .9rem; font-weight: 600; }
 
-        /* Tabellen-Bereich */
-        .table-grid {
-            flex: 1 1 280px;
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 14px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            min-width: 0;
-        }
-        .table-grid h2 {
-            font-size: 1rem;
-            color: var(--accent);
-            margin-bottom: 8px;
-        }
-        #edit-btn {
-            font-size: 0.8rem;
-            padding: 4px 10px;
-            margin-bottom: 8px;
-            background: var(--surface);
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-        }
-        #edit-btn:hover { background: var(--accent); color: #fff; }
+    /* TIMER VIEW */
+    .timer-view { display: flex; flex-direction: column; gap: 12px; }
+    .timer-display { display: flex; align-items: center; justify-content: center;
+      gap: 20px; flex-wrap: wrap; padding: 8px 0; }
+    .digital-time { font-size: 2.8rem; font-weight: 800;
+      font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+    .timer-controls { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+    .btn-ctrl { padding: 12px 4px; border: none; border-radius: 8px; font-size: .9rem;
+      font-weight: 700; cursor: pointer; min-height: 48px; transition: background .2s, transform .1s; }
+    .btn-ctrl:active { transform: scale(.96); }
+    .ctrl-start { background: var(--accent); color: #fff; }
+    .ctrl-pause { background: var(--btn-pause); color: #fff; }
+    .ctrl-stop  { background: var(--btn-stop);  color: #fff; }
+    .ctrl-reset { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .phase-table-wrap { background: var(--surface); border-radius: 12px; padding: 12px;
+      box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .phase-table-wrap h3 { font-size: .9rem; color: var(--accent); margin-bottom: 8px; }
+    table.ptable { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .ptable thead th { color: var(--text-muted); font-weight: 600; padding: 4px 6px;
+      border-bottom: 1px solid var(--border); text-align: left; }
+    .ptable .prow td { padding: 6px 6px; }
+    .ptable .prow.active-p { background: var(--active-row) !important; font-weight: 700; }
+    .ptable .prow.done-p   { background: var(--done-row) !important; color: var(--done-text); text-decoration: line-through; }
 
-        /* Edit-Formular */
-        #edit-section {
-            background: var(--bg);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border);
-        }
-        #edit-form input[type="number"],
-        #edit-form input[type="text"] {
-            background: var(--surface);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 3px 6px;
-            margin-bottom: 4px;
-        }
-        #edit-form button {
-            font-size: 0.75rem;
-            padding: 2px 8px;
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 4px;
-        }
-        #edit-form button:hover { background: var(--danger-hover); }
-        #save-btn {
-            margin-top: 8px;
-            padding: 5px 14px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
-        #save-btn:hover { background: var(--accent-dark); }
+    /* WORKOUT */
+    .workout-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-load { flex: 1; padding: 10px; background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; font-weight: 700; cursor: pointer;
+      min-height: 44px; font-size: .9rem; transition: background .2s; }
+    .btn-load:hover { background: var(--accent-dark); }
+    .slot-card { background: var(--surface); border-radius: 12px; padding: 14px;
+      margin-bottom: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .slot-header { font-size: .85rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
 
-        /* Tabelle */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.88rem;
-        }
-        thead th {
-            color: var(--text-muted);
-            font-weight: 600;
-            padding: 4px 6px;
-            border-bottom: 1px solid var(--border);
-            text-align: left;
-        }
-        .repetition-item td {
-            padding: 5px 6px;
-            border-radius: 3px;
-        }
-        .repetition-item.active {
-            background: var(--active-row) !important;
-            font-weight: 700;
-        }
-        .repetition-item.completed {
-            background: var(--done-row) !important;
-            color: var(--text-muted);
-            text-decoration: line-through;
-        }
+    /* WORKOUT RUN */
+    .run-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .run-title { font-size: 1.1rem; font-weight: 700; }
+    .set-row { display: flex; align-items: center; gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid var(--border); }
+    .set-row:last-child { border-bottom: none; }
+    .set-cb { width: 28px; height: 28px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+    .set-label { font-size: .9rem; flex: 1; }
+    .set-label.done { text-decoration: line-through; color: var(--text-muted); }
+    .btn-timer { padding: 8px 14px; background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; font-size: .82rem; font-weight: 700;
+      cursor: pointer; min-height: 36px; transition: background .2s; }
+    .btn-timer:hover { background: var(--accent-dark); }
 
-        /* Timer-Bereich */
-        .timer-grid {
-            flex: 0 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 14px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-        .digital-timer-grid {
-            font-size: 3rem;
-            font-weight: 800;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 3px;
-            color: var(--timer-text);
-        }
-        .analog-timer-grid canvas {
-            display: block;
-        }
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #333; color: #fff; padding: 10px 20px; border-radius: 24px;
+      font-size: .9rem; z-index: 500; transition: transform .3s; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
 
-        /* Buttons */
-        .modul-button-grid {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 12px 14px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-        .modul-button-grid button {
-            flex: 1 1 80px;
-            padding: 10px 0;
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .modul-button-grid button:active { transform: scale(0.97); }
-        #start-btn { background: var(--btn-bg); color: var(--btn-text); }
-        #start-btn:hover { background: var(--btn-hover); }
-        #pause-btn { background: var(--pause-btn); color: #fff; }
-        #pause-btn:hover { background: var(--pause-hover); }
-        #stop-btn  { background: var(--danger); color: #fff; }
-        #stop-btn:hover { background: var(--danger-hover); }
-        #reset-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-        #reset-btn:hover { background: var(--border); }
+    /* MODAL SHEET */
+    .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300;
+      display: flex; align-items: flex-end; }
+    .sheet { background: var(--surface); width: 100%; border-radius: 16px 16px 0 0;
+      padding: 20px; max-width: 700px; margin: 0 auto; }
+    .sheet-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
 
-        /* Responsive */
-        @media (max-width: 480px) {
-            .digital-timer-grid { font-size: 2.2rem; }
-            .work-grid { flex-direction: column; }
-        }
-    </style>
+    @media (max-width: 420px) {
+      .digital-time { font-size: 2rem; }
+      .timer-controls { grid-template-columns: repeat(2,1fr); }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body data-theme="light">
-    <div class="app-grid">
-        <div class="control-grid">
-            <div class="modul-menu-grid">Sport-Timer</div>
-            <div class="mode-grid">
-                <div class="theme-switch">
-                    <label for="theme-toggle">Dunkelmodus</label>
-                    <input type="checkbox" id="theme-toggle">
-                </div>
-            </div>
-        </div>
-        <div class="modul-grid">
-            <div class="modul-control-grid">
-                <div class="volume-control">
-                    <label for="volume-slider">Lautstärke</label>
-                    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
-                </div>
-            </div>
-            <div class="work-grid">
-                <div class="table-grid">
-                    <h2>Aktuelles Set</h2>
-                    <button id="edit-btn">Bearbeiten</button>
-                    <div id="edit-section" style="display:none;">
-                      <form id="edit-form"></form>
-                      <button id="save-btn" type="button">Speichern</button>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Zeit</th>
-                                <th>Übung</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="repetition-list" id="repetition-list">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="timer-grid">
-                    <div class="digital-timer-grid" id="digital-timer">00:00</div>
-                    <div class="analog-timer-grid">
-                        <canvas id="active-circle" width="200" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="modul-button-grid controls">
-                <button id="start-btn">Start</button>
-                <button id="pause-btn">Pause</button>
-                <button id="stop-btn">Stopp</button>
-                <button id="reset-btn">Reset</button>
-            </div>
-        </div>
+
+<nav class="nav">
+  <span class="nav-title" id="nav-title">OSA Sport</span>
+  <button class="nav-btn" id="menu-btn">&#9776;</button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">Menü</div>
+  <button class="drawer-item" id="m-upload">&#128228;&nbsp; Upload JSON</button>
+  <button class="drawer-item" id="m-download">&#128229;&nbsp; Download JSON</button>
+  <button class="drawer-item" id="m-add-workout">&#43;&nbsp; Workout erstellen</button>
+  <button class="drawer-item" id="m-workouts">&#128203;&nbsp; Workouts</button>
+  <button class="drawer-item" id="m-home">&#127968;&nbsp; Module</button>
+  <div class="drawer-setting">
+    <div class="drawer-setting-label">
+      <span>Dunkelmodus</span>
+      <input type="checkbox" class="toggle" id="theme-toggle">
     </div>
-    <script>
-        // === SOUND-VARIABLEN ===
-        const startSound = new Audio('start-sound.mp3');
-        const signalSound = new Audio('signal-sound.mp3');
-        const endSound = new Audio('end-sound.mp3');
+  </div>
+  <div class="drawer-setting">
+    <div class="drawer-setting-label"><span>Lautstärke</span></div>
+    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5">
+  </div>
+</aside>
 
-        // === TIMERDATEN (wird in LocalStorage gespeichert!) ===
-        let repetitionsData = JSON.parse(localStorage.getItem("sporttimer") || "null") || [
-            { Time: 3, Exercises: 'Start' },
-            { Time: 45, Exercises: 'Wallsit' },
-            { Time: 30, Exercises: 'Pause' },
-            { Time: 45, Exercises: 'Wallsit' },
-            { Time: 30, Exercises: 'Pause' },
-            { Time: 45, Exercises: 'Wallsit' }
-        ];
+<input type="file" id="file-input" accept=".json" style="display:none">
+<div class="toast" id="toast"></div>
+<main class="main" id="main"></main>
 
-        // === DOM-Elemente ===
-        const repetitionList = document.getElementById('repetition-list');
-        const digitalTimer = document.getElementById('digital-timer');
-        const activeCircle = document.getElementById('active-circle');
-        const volumeSlider = document.getElementById('volume-slider');
-        const themeToggle = document.getElementById('theme-toggle');
-        const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const editBtn = document.getElementById('edit-btn');
-        const editSection = document.getElementById('edit-section');
-        const editForm = document.getElementById('edit-form');
-        const saveBtn = document.getElementById('save-btn');
-        // === CANVAS ===
-        const ctxActive = activeCircle.getContext('2d');
-        const radius = activeCircle.width / 2 - 10;
-        // === TIMER-VARIABLEN ===
-        let currentRepetitionIndex = 0;
-        let remainingTime = 0;
-        let timerInterval = null;
-        let isPaused = false;
-        let isRunning = false;
+<script>
+// ── SOUNDS ──────────────────────────────────────────────────────
+const SND = {
+  start:  new Audio('start-sound.mp3'),
+  signal: new Audio('signal-sound.mp3'),
+  end:    new Audio('end-sound.mp3'),
+};
+function setVol(v) { Object.values(SND).forEach(s => s.volume = v); }
 
-        // === SOUND-LAUTSTÄRKE ===
-        function setVolume(val) {
-          startSound.volume = val;
-          signalSound.volume = val;
-          endSound.volume = val;
-        }
-        setVolume(volumeSlider.value);
-        volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+// ── STORAGE ─────────────────────────────────────────────────────
+const SK = 'osa-app';
+let S = null;
+function loadS() {
+  try { S = JSON.parse(localStorage.getItem(SK)) || {}; } catch { S = {}; }
+  S.modules  = S.modules  || [];
+  S.workouts = S.workouts || [];
+  return S;
+}
+function saveS() { localStorage.setItem(SK, JSON.stringify(S)); }
+function uid() {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
 
-        // === THEME ===
-        themeToggle.addEventListener('change', () => {
-            document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+// ── TOAST ───────────────────────────────────────────────────────
+let _tt;
+function toast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── ACTIVE TIMER ────────────────────────────────────────────────
+let activeTimer = null;
+function stopActiveTimer() {
+  if (activeTimer?.interval) clearInterval(activeTimer.interval);
+  activeTimer = null;
+}
+
+// ── ROUTER ──────────────────────────────────────────────────────
+function go(view, params = {}) {
+  stopActiveTimer();
+  const el = document.getElementById('main');
+  el.scrollTop = 0;
+  const map = {
+    home:          [viewHome,          bindHome],
+    timerForm:     [viewTimerForm,     bindTimerForm],
+    exerciseForm:  [viewExForm,        bindExForm],
+    workoutCreate: [viewWorkoutCreate, bindWorkoutCreate],
+    workoutList:   [viewWorkoutList,   bindWorkoutList],
+    workoutRun:    [viewWorkoutRun,    bindWorkoutRun],
+    timerRun:      [viewTimerRun,      bindTimerRun],
+  };
+  const [render, bind] = map[view] || map.home;
+  el.innerHTML = render(params);
+  bind(params);
+}
+
+// ── DRAWER ──────────────────────────────────────────────────────
+const overlayEl = document.getElementById('overlay');
+const drawerEl  = document.getElementById('drawer');
+function openDrawer()  { drawerEl.classList.add('open');  overlayEl.classList.add('open'); }
+function closeDrawer() { drawerEl.classList.remove('open'); overlayEl.classList.remove('open'); }
+document.getElementById('menu-btn').addEventListener('click', openDrawer);
+overlayEl.addEventListener('click', closeDrawer);
+document.getElementById('nav-title').addEventListener('click', () => go('home'));
+
+function drawerGo(view) { closeDrawer(); go(view); }
+document.getElementById('m-home').addEventListener('click',       () => drawerGo('home'));
+document.getElementById('m-add-workout').addEventListener('click',() => drawerGo('workoutCreate'));
+document.getElementById('m-workouts').addEventListener('click',   () => drawerGo('workoutList'));
+document.getElementById('m-download').addEventListener('click',   () => { closeDrawer(); dlJSON(); });
+document.getElementById('m-upload').addEventListener('click',     () => { closeDrawer(); document.getElementById('file-input').click(); });
+
+// Theme
+const themeToggle = document.getElementById('theme-toggle');
+themeToggle.addEventListener('change', () =>
+  document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light'));
+
+// Volume
+const volSlider = document.getElementById('vol-slider');
+setVol(volSlider.value);
+volSlider.addEventListener('input', () => setVol(volSlider.value));
+
+// Upload
+document.getElementById('file-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.modules)  S.modules.push(...d.modules);
+      if (d.workouts) S.workouts.push(...d.workouts);
+      saveS(); go('home'); toast('Import erfolgreich');
+    } catch { toast('Fehler beim Import'); }
+  };
+  r.readAsText(f); e.target.value = '';
+});
+
+function dlJSON() {
+  const b = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = 'osa-backup.json'; a.click();
+  URL.revokeObjectURL(a.href); toast('Download gestartet');
+}
+
+// ── ESCAPE ──────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── VIEW: HOME ──────────────────────────────────────────────────
+function viewHome() {
+  const mods = S.modules;
+  let h = `<div class="view-header">
+    <span class="view-title">Module</span>
+    <button class="btn-fab" id="add-mod-btn" title="Modul hinzufügen">+</button>
+  </div>`;
+  if (!mods.length) {
+    h += `<div class="empty-state"><div class="empty-icon">&#127939;</div>
+      <p>Noch keine Module.<br>Tippe auf + um zu beginnen.</p></div>`;
+    return h;
+  }
+  const timers = mods.filter(m => m.type === 'timer');
+  const exs    = mods.filter(m => m.type === 'exercise');
+  if (timers.length) {
+    h += `<div class="section-label">Timer-Module</div>`;
+    timers.forEach(m => {
+      const c = m.config;
+      h += `<div class="card">
+        <div class="card-header">
+          <span class="card-title">${esc(m.name)}</span>
+          <span class="badge badge-timer">Timer</span>
+        </div>
+        <div class="card-info">${c.sets}&times; ${c.exerciseDuration}s Übung / ${c.pauseDuration}s Pause</div>
+        <div class="card-actions">
+          <button class="btn-sm ctrl-start" style="color:#fff" data-id="${m.id}" data-a="run">&#9654; Start</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-timer">Bearbeiten</button>
+          <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">Löschen</button>
+        </div></div>`;
+    });
+  }
+  if (exs.length) {
+    h += `<div class="section-label">Übungs-Module</div>`;
+    exs.forEach(m => {
+      const c = m.config;
+      h += `<div class="card">
+        <div class="card-header">
+          <span class="card-title">${esc(m.name)}</span>
+          <span class="badge badge-ex">Übung</span>
+        </div>
+        ${c.imageBase64 ? `<img class="img-preview" src="${c.imageBase64}" alt="">` : ''}
+        ${c.description ? `<div class="card-info">${esc(c.description).slice(0,80)}${c.description.length>80?'…':''}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-ex">Bearbeiten</button>
+          <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">Löschen</button>
+        </div></div>`;
+    });
+  }
+  return h;
+}
+function bindHome() {
+  document.getElementById('add-mod-btn')?.addEventListener('click', showTypePicker);
+  document.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.id, a = b.dataset.a;
+    if (a === 'run') { const m = S.modules.find(x => x.id === id); go('timerRun', { mod: m }); }
+    else if (a === 'edit-timer') go('timerForm',   { id });
+    else if (a === 'edit-ex')    go('exerciseForm', { id });
+    else if (a === 'del') {
+      if (!confirm('Modul löschen?')) return;
+      S.modules = S.modules.filter(x => x.id !== id);
+      saveS(); go('home'); toast('Gelöscht');
+    }
+  }));
+}
+function showTypePicker() {
+  const bd = document.createElement('div');
+  bd.className = 'sheet-backdrop';
+  bd.innerHTML = `<div class="sheet">
+    <div class="sheet-title">Modul-Typ wählen</div>
+    <div class="type-grid">
+      <div class="type-card" id="pick-timer"><div class="type-icon">&#9201;</div><div class="type-label">Timer</div></div>
+      <div class="type-card" id="pick-ex"><div class="type-icon">&#127939;</div><div class="type-label">Übung</div></div>
+    </div>
+    <button class="btn-secondary" id="pick-cancel">Abbrechen</button>
+  </div>`;
+  document.body.appendChild(bd);
+  bd.querySelector('#pick-timer').addEventListener('click', () => { document.body.removeChild(bd); go('timerForm', {}); });
+  bd.querySelector('#pick-ex').addEventListener('click',    () => { document.body.removeChild(bd); go('exerciseForm', {}); });
+  bd.querySelector('#pick-cancel').addEventListener('click',() => document.body.removeChild(bd));
+  bd.addEventListener('click', e => { if (e.target === bd) document.body.removeChild(bd); });
+}
+
+// ── VIEW: TIMER FORM ─────────────────────────────────────────────
+function viewTimerForm({ id } = {}) {
+  const m = id ? S.modules.find(x => x.id === id) : null;
+  const c = m?.config || { exerciseDuration: 45, pauseDuration: 30, sets: 3 };
+  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  <div class="form-card">
+    <div class="form-group"><label class="form-label">Name der Übung</label>
+      <input class="form-input" id="f-name" type="text" placeholder="z.B. Wall-sit" value="${esc(m?.name||'')}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Übungszeit (s)</label>
+        <input class="form-input" id="f-ex" type="number" min="1" value="${c.exerciseDuration}"></div>
+      <div class="form-group"><label class="form-label">Pausenzeit (s)</label>
+        <input class="form-input" id="f-pa" type="number" min="0" value="${c.pauseDuration}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Sätze</label>
+      <input class="form-input" id="f-sets" type="number" min="1" value="${c.sets}"></div>
+    <button class="btn-primary" id="save-btn">${m ? 'Speichern' : 'Erstellen'}</button>
+  </div>`;
+}
+function bindTimerForm({ id } = {}) {
+  document.getElementById('back').addEventListener('click', () => go('home'));
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) { toast('Bitte Name eingeben'); return; }
+    const cfg = {
+      exerciseDuration: parseInt(document.getElementById('f-ex').value)   || 45,
+      pauseDuration:    parseInt(document.getElementById('f-pa').value)   || 0,
+      sets:             parseInt(document.getElementById('f-sets').value) || 3,
+    };
+    if (id) { const m = S.modules.find(x => x.id === id); m.name = name; m.config = cfg; }
+    else S.modules.push({ id: uid(), type: 'timer', name, config: cfg });
+    saveS(); go('home'); toast(id ? 'Aktualisiert' : 'Timer erstellt');
+  });
+}
+
+// ── VIEW: EXERCISE FORM ──────────────────────────────────────────
+function viewExForm({ id } = {}) {
+  const m = id ? S.modules.find(x => x.id === id) : null;
+  const c = m?.config || { imageBase64: '', description: '' };
+  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  <div class="form-card">
+    <div class="form-group"><label class="form-label">Name</label>
+      <input class="form-input" id="f-name" type="text" placeholder="z.B. Liegestütz" value="${esc(m?.name||'')}"></div>
+    <div class="form-group"><label class="form-label">Bild (optional)</label>
+      <input type="file" id="f-img-file" accept="image/*" style="display:none">
+      <button class="btn-secondary" id="pick-img" style="margin-top:0">&#128247; Bild wählen</button>
+      <div id="img-preview">${c.imageBase64 ? `<img class="img-preview" src="${c.imageBase64}">` : ''}</div>
+    </div>
+    <div class="form-group"><label class="form-label">Beschreibung (optional)</label>
+      <textarea class="form-textarea" id="f-desc">${esc(c.description||'')}</textarea></div>
+    <button class="btn-primary" id="save-btn">${m ? 'Speichern' : 'Erstellen'}</button>
+  </div>`;
+}
+function bindExForm({ id } = {}) {
+  document.getElementById('back').addEventListener('click', () => go('home'));
+  const m = id ? S.modules.find(x => x.id === id) : null;
+  let imgData = m?.config?.imageBase64 || '';
+  document.getElementById('pick-img').addEventListener('click', () =>
+    document.getElementById('f-img-file').click());
+  document.getElementById('f-img-file').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      imgData = ev.target.result;
+      document.getElementById('img-preview').innerHTML = `<img class="img-preview" src="${imgData}">`;
+    };
+    r.readAsDataURL(f);
+  });
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) { toast('Bitte Name eingeben'); return; }
+    const description = document.getElementById('f-desc').value.trim();
+    if (id) { const m2 = S.modules.find(x => x.id === id); m2.name = name; m2.config = { imageBase64: imgData, description }; }
+    else S.modules.push({ id: uid(), type: 'exercise', name, config: { imageBase64: imgData, description } });
+    saveS(); go('home'); toast(id ? 'Aktualisiert' : 'Übung erstellt');
+  });
+}
+
+// ── VIEW: WORKOUT CREATE ─────────────────────────────────────────
+function viewWorkoutCreate() {
+  if (!S.modules.length) return `<button class="btn-back" id="back">&#8592; Zurück</button>
+    <div class="empty-state"><div class="empty-icon">&#128203;</div>
+    <p>Keine Module vorhanden.<br>Erstelle zuerst Module.</p></div>`;
+  const opts = S.modules.map(m =>
+    `<option value="${m.id}">${esc(m.name)} (${m.type==='timer'?'Timer':'Übung'})</option>`).join('');
+  let slots = '';
+  for (let i = 1; i <= 4; i++) {
+    slots += `<div class="slot-card"><div class="slot-header">Übung ${i}</div>
+      <div class="form-group"><label class="form-label">Modul</label>
+        <select class="form-select" id="s-mod-${i}">
+          <option value="">-- Modul wählen --</option>${opts}
+        </select></div>
+      <div class="form-group"><label class="form-label">Intensität (z.B. 3&times;60s)</label>
+        <input class="form-input" id="s-int-${i}" type="text" placeholder="3&times;60s"></div>
+    </div>`;
+  }
+  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+    <div class="form-group"><label class="form-label">Workout-Name</label>
+      <input class="form-input" id="w-name" type="text" placeholder="z.B. Leg Day A"></div>
+    ${slots}
+    <button class="btn-primary" id="save-w">Workout speichern</button>`;
+}
+function bindWorkoutCreate() {
+  document.getElementById('back')?.addEventListener('click', () => go('home'));
+  document.getElementById('save-w')?.addEventListener('click', () => {
+    const name = document.getElementById('w-name')?.value.trim();
+    if (!name) { toast('Bitte Name eingeben'); return; }
+    const exercises = [];
+    for (let i = 1; i <= 4; i++) {
+      const moduleId = document.getElementById(`s-mod-${i}`)?.value;
+      if (!moduleId) { toast(`Bitte Übung ${i} wählen`); return; }
+      exercises.push({
+        moduleId,
+        intensity: document.getElementById(`s-int-${i}`)?.value.trim() || '',
+        sets: [{ index:1, done:false }, { index:2, done:false }, { index:3, done:false }]
+      });
+    }
+    S.workouts.push({ id: uid(), name, exercises });
+    saveS(); go('workoutList'); toast('Workout gespeichert');
+  });
+}
+
+// ── VIEW: WORKOUT LIST ───────────────────────────────────────────
+function viewWorkoutList() {
+  let h = `<div class="view-header">
+    <span class="view-title">Workouts</span>
+    <button class="btn-fab" id="new-w-btn" title="Neues Workout">+</button>
+  </div>`;
+  if (!S.workouts.length) {
+    h += `<div class="empty-state"><div class="empty-icon">&#128203;</div>
+      <p>Noch keine Workouts.<br>Tippe auf + um zu erstellen.</p></div>`;
+    return h;
+  }
+  S.workouts.forEach(w => {
+    const names = w.exercises.map(e => {
+      const m = S.modules.find(x => x.id === e.moduleId);
+      return (m ? esc(m.name) : '<i>gelöscht</i>') + (e.intensity ? ' &middot; ' + esc(e.intensity) : '');
+    });
+    const total = w.exercises.reduce((s,e)=>s+e.sets.length,0);
+    const done  = w.exercises.reduce((s,e)=>s+e.sets.filter(x=>x.done).length,0);
+    const pct   = total ? Math.round(done/total*100) : 0;
+    h += `<div class="card">
+      <div class="card-header">
+        <span class="card-title">${esc(w.name)}</span>
+        <span style="font-size:.8rem;color:var(--text-muted)">${done}/${total} Sätze</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div style="font-size:.83rem;color:var(--text-muted);margin:6px 0">
+        ${names.map(n=>`&#9632; ${n}`).join('<br>')}
+      </div>
+      <div class="workout-actions">
+        <button class="btn-load" data-id="${w.id}" data-a="run">&#9654; Laden</button>
+        <button class="btn-sm btn-edit" style="min-height:44px" data-id="${w.id}" data-a="reset">Reset</button>
+        <button class="btn-sm btn-del"  style="min-height:44px" data-id="${w.id}" data-a="del">Löschen</button>
+      </div></div>`;
+  });
+  return h;
+}
+function bindWorkoutList() {
+  document.getElementById('new-w-btn')?.addEventListener('click', () => go('workoutCreate'));
+  document.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.id, a = b.dataset.a;
+    if (a === 'run') {
+      const w = S.workouts.find(x => x.id === id); go('workoutRun', { workout: w });
+    } else if (a === 'reset') {
+      const w = S.workouts.find(x => x.id === id);
+      w.exercises.forEach(e => e.sets.forEach(s => s.done = false));
+      saveS(); go('workoutList'); toast('Fortschritt zurückgesetzt');
+    } else if (a === 'del') {
+      if (!confirm('Workout löschen?')) return;
+      S.workouts = S.workouts.filter(x => x.id !== id);
+      saveS(); go('workoutList'); toast('Gelöscht');
+    }
+  }));
+}
+
+// ── VIEW: WORKOUT RUN ────────────────────────────────────────────
+function viewWorkoutRun({ workout: w }) {
+  const total = w.exercises.reduce((s,e)=>s+e.sets.length,0);
+  const done  = w.exercises.reduce((s,e)=>s+e.sets.filter(x=>x.done).length,0);
+  const pct   = total ? Math.round(done/total*100) : 0;
+  let h = `<button class="btn-back" id="back">&#8592; Zurück</button>
+    <div class="run-header">
+      <span class="run-title">${esc(w.name)}</span>
+      <span id="run-count" style="font-size:.82rem;color:var(--text-muted)">${done}/${total}</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="run-bar" style="width:${pct}%"></div></div>`;
+  w.exercises.forEach((ex, ei) => {
+    const mod = S.modules.find(x => x.id === ex.moduleId);
+    const mname = mod ? mod.name : '(gelöscht)';
+    h += `<div class="card">
+      <div class="card-header">
+        <span class="card-title">${esc(mname)}</span>
+        ${mod ? `<span class="badge ${mod.type==='timer'?'badge-timer':'badge-ex'}">${mod.type==='timer'?'Timer':'Übung'}</span>` : ''}
+      </div>
+      ${ex.intensity ? `<div class="card-info">${esc(ex.intensity)}</div>` : ''}
+      ${mod?.type==='exercise'&&mod.config.imageBase64 ? `<img class="img-preview" src="${mod.config.imageBase64}" alt="">` : ''}
+      ${mod?.type==='exercise'&&mod.config.description ? `<div class="card-info">${esc(mod.config.description)}</div>` : ''}
+      <div>`;
+    ex.sets.forEach((set, si) => {
+      h += `<div class="set-row">
+        <input type="checkbox" class="set-cb" data-ei="${ei}" data-si="${si}" ${set.done?'checked':''}>
+        <span class="set-label${set.done?' done':''}">Satz ${set.index}</span>
+        ${mod?.type==='timer' ? `<button class="btn-timer" data-modid="${mod.id}" data-wid="${w.id}">&#9654; Timer</button>` : ''}
+      </div>`;
+    });
+    h += `</div></div>`;
+  });
+  return h;
+}
+function bindWorkoutRun({ workout: w }) {
+  document.getElementById('back').addEventListener('click', () => go('workoutList'));
+  document.querySelectorAll('.set-cb').forEach(cb => cb.addEventListener('change', () => {
+    const ei = +cb.dataset.ei, si = +cb.dataset.si;
+    w.exercises[ei].sets[si].done = cb.checked;
+    cb.nextElementSibling?.classList.toggle('done', cb.checked);
+    const sw = S.workouts.find(x => x.id === w.id);
+    if (sw) { sw.exercises[ei].sets[si].done = cb.checked; saveS(); }
+    const total = w.exercises.reduce((s,e)=>s+e.sets.length,0);
+    const done  = w.exercises.reduce((s,e)=>s+e.sets.filter(x=>x.done).length,0);
+    document.getElementById('run-bar').style.width = Math.round(done/total*100)+'%';
+    document.getElementById('run-count').textContent = `${done}/${total}`;
+  }));
+  document.querySelectorAll('.btn-timer').forEach(b => b.addEventListener('click', () => {
+    const mod = S.modules.find(x => x.id === b.dataset.modid);
+    if (mod) go('timerRun', { mod, returnTo: { view:'workoutRun', params:{ workout:w } } });
+  }));
+}
+
+// ── VIEW: TIMER RUN ──────────────────────────────────────────────
+function buildReps(mod) {
+  const { exerciseDuration, pauseDuration, sets } = mod.config;
+  const r = [{ Time: 3, Exercises: 'Start' }];
+  for (let i = 0; i < sets; i++) {
+    r.push({ Time: exerciseDuration, Exercises: mod.name });
+    if (i < sets - 1 && pauseDuration > 0)
+      r.push({ Time: pauseDuration, Exercises: 'Pause' });
+  }
+  return r;
+}
+
+function viewTimerRun({ mod }) {
+  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  <div class="timer-view">
+    <div class="timer-display">
+      <div class="digital-time" id="dt">00:00</div>
+      <canvas id="tc" width="200" height="200"></canvas>
+    </div>
+    <div class="timer-controls">
+      <button class="btn-ctrl ctrl-start" id="t-start">Start</button>
+      <button class="btn-ctrl ctrl-pause" id="t-pause">Pause</button>
+      <button class="btn-ctrl ctrl-stop"  id="t-stop">Stopp</button>
+      <button class="btn-ctrl ctrl-reset" id="t-reset">Reset</button>
+    </div>
+    <div class="phase-table-wrap">
+      <h3>${esc(mod.name)}</h3>
+      <table class="ptable">
+        <thead><tr><th>Zeit</th><th>Phase</th><th>Status</th></tr></thead>
+        <tbody id="phase-body"></tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function bindTimerRun({ mod, returnTo }) {
+  document.getElementById('back').addEventListener('click', () => {
+    stopActiveTimer();
+    returnTo ? go(returnTo.view, returnTo.params) : go('home');
+  });
+
+  const reps = buildReps(mod);
+  const canvas = document.getElementById('tc');
+  const ctx    = canvas.getContext('2d');
+  const CX = 100, CY = 100, R = 88;
+  const phBody = document.getElementById('phase-body');
+
+  function isDark() { return document.body.getAttribute('data-theme') === 'dark'; }
+  function bgCol()  { return isDark() ? '#1a1a2e' : '#f4f4f4'; }
+  function sfCol()  { return isDark() ? '#16213e' : '#ffffff'; }
+
+  function renderPhases() {
+    phBody.innerHTML = reps.map((r, i) => {
+      const isPause = r.Exercises.toLowerCase() === 'pause';
+      return `<tr class="prow" data-i="${i}" style="background:${isPause?'var(--pause-color)':'var(--work-color)'}">
+        <td>${r.Time}s</td><td>${esc(r.Exercises)}</td>
+        <td id="ps-${i}">soon</td></tr>`;
+    }).join('');
+  }
+  renderPhases();
+
+  function drawCircle(total, remaining, phaseName) {
+    if (!total) return;
+    ctx.clearRect(0, 0, 200, 200);
+    const elapsed = total - remaining;
+    const ang = (2 * Math.PI) / total;
+    const sa  = -Math.PI / 2;
+    const isPause = phaseName.toLowerCase() === 'pause';
+    const isStart = phaseName.toLowerCase() === 'start';
+    const exColors = ['#e53935', '#a5d6a7', '#2e7d32'];
+
+    for (let i = 0; i < total; i++) {
+      const a1 = sa + i * ang, a2 = sa + (i+1) * ang;
+      ctx.beginPath(); ctx.moveTo(CX, CY);
+      ctx.arc(CX, CY, R, a1, a2); ctx.closePath();
+      if (i < elapsed)   ctx.fillStyle = bgCol();
+      else if (isStart)  ctx.fillStyle = '#1565c0';
+      else if (isPause)  ctx.fillStyle = '#388E3C';
+      else               ctx.fillStyle = exColors[i % 3];
+      ctx.fill();
+      ctx.beginPath(); ctx.moveTo(CX, CY);
+      ctx.lineTo(CX + R * Math.cos(a1), CY + R * Math.sin(a1));
+      ctx.strokeStyle = bgCol(); ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(CX, CY, R * 0.5, 0, 2*Math.PI);
+    ctx.fillStyle = sfCol(); ctx.fill();
+  }
+
+  function drawInactive() {
+    ctx.clearRect(0, 0, 200, 200);
+    const total = 12, ang = (2*Math.PI)/total, sa = -Math.PI/2;
+    for (let i = 0; i < total; i++) {
+      const a1 = sa+i*ang;
+      ctx.beginPath(); ctx.moveTo(CX,CY);
+      ctx.arc(CX,CY,R,a1,sa+(i+1)*ang); ctx.closePath();
+      ctx.fillStyle = '#9e9e9e'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(CX,CY);
+      ctx.lineTo(CX+R*Math.cos(a1), CY+R*Math.sin(a1));
+      ctx.strokeStyle = bgCol(); ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(CX,CY,R*.5,0,2*Math.PI);
+    ctx.fillStyle = sfCol(); ctx.fill();
+  }
+  drawInactive();
+
+  function setDT(s) {
+    const m = Math.floor(s/60).toString().padStart(2,'0');
+    const sec = (s%60).toString().padStart(2,'0');
+    document.getElementById('dt').textContent = `${m}:${sec}`;
+  }
+
+  function updatePhaseUI(idx) {
+    reps.forEach((_, i) => {
+      const row = phBody.querySelector(`[data-i="${i}"]`);
+      const st  = document.getElementById(`ps-${i}`);
+      if (!row||!st) return;
+      row.classList.remove('active-p','done-p');
+      if (i < idx)      { row.classList.add('done-p');   st.textContent = 'done'; }
+      else if (i===idx) { row.classList.add('active-p'); st.textContent = 'aktiv'; }
+      else              { st.textContent = 'soon'; }
+    });
+  }
+
+  const ts = { running:false, paused:false, idx:0, rem:0, interval:null };
+  activeTimer = ts;
+  let wl = null;
+  async function reqWL() { try { if('wakeLock' in navigator) wl=await navigator.wakeLock.request('screen'); }catch{} }
+  function relWL() { if(wl) wl.release().then(()=>wl=null); }
+
+  function runPhase() {
+    if (ts.idx >= reps.length) {
+      SND.end.play(); relWL(); ts.running = false; drawInactive(); return;
+    }
+    const ph = reps[ts.idx];
+    ts.rem = ph.Time;
+    setDT(ts.rem); updatePhaseUI(ts.idx);
+    drawCircle(ph.Time, ts.rem, ph.Exercises);
+    SND.start.play();
+    ts.interval = setInterval(() => {
+      if (ts.paused) return;
+      ts.rem--;
+      setDT(ts.rem);
+      drawCircle(ph.Time, ts.rem, ph.Exercises);
+      const r = ts.rem;
+      if (r > 20 && r%10===0)        SND.signal.play();
+      else if (r<=20&&r>5&&r%5===0)  SND.signal.play();
+      else if (r===8||r===6)          SND.signal.play();
+      else if (r<=5&&r>0)             SND.signal.play();
+      if (r <= 0) {
+        clearInterval(ts.interval); SND.end.play();
+        ts.idx++; setTimeout(runPhase, 1000);
+      }
+    }, 1000);
+  }
+
+  function resetState() {
+    clearInterval(ts.interval);
+    ts.running=false; ts.paused=false; ts.idx=0; ts.rem=0;
+    relWL(); setDT(0); drawInactive(); renderPhases();
+  }
+
+  document.getElementById('t-start').addEventListener('click', () => {
+    if (ts.running && !ts.paused) return;
+    if (ts.paused) { ts.paused = false; return; }
+    ts.running = true; ts.paused = false; ts.idx = 0;
+    reqWL(); runPhase();
+  });
+  document.getElementById('t-pause').addEventListener('click', () => {
+    if (!ts.running) return;
+    ts.paused = true; relWL();
+  });
+  document.getElementById('t-stop').addEventListener('click',  resetState);
+  document.getElementById('t-reset').addEventListener('click', resetState);
+
+  document.addEventListener('visibilitychange', () => {
+    if (wl && document.visibilityState==='visible') reqWL();
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+loadS();
+
+// Migrate old sporttimer localStorage data
+if (!S.modules.length) {
+  try {
+    const old = JSON.parse(localStorage.getItem('sporttimer') || 'null');
+    if (Array.isArray(old) && old.length) {
+      const exItems = old.filter(r => !['start','pause'].includes(r.Exercises.toLowerCase()));
+      const paItems = old.filter(r => r.Exercises.toLowerCase()==='pause');
+      if (exItems.length) {
+        S.modules.push({
+          id: uid(), type: 'timer', name: exItems[0].Exercises,
+          config: {
+            exerciseDuration: exItems[0].Time,
+            pauseDuration: paItems[0]?.Time || 30,
+            sets: exItems.length
+          }
         });
+        saveS();
+      }
+    }
+  } catch {}
+}
 
-        // === TIMER-LISTE ERZEUGEN ===
-        function generateRepetitionList() {
-            repetitionList.innerHTML = '';
-            repetitionsData.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                tr.classList.add('repetition-item');
-                if (item.Exercises.toLowerCase() === 'pause') {
-                    tr.style.backgroundColor = 'var(--pause-color)';
-                } else {
-                    tr.style.backgroundColor = 'var(--work-color)';
-                }
-                tr.setAttribute('data-index', index);
-                tr.innerHTML = `
-                    <td>${item.Time}s</td>
-                    <td>${item.Exercises}</td>
-                    <td id="status-${index}">soon</td>
-                `;
-                repetitionList.appendChild(tr);
-            });
-        }
+go('home');
 
-        // === WAKE LOCK ===
-        let wakeLock = null;
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-            } catch (err) {}
-        }
-        function releaseWakeLock() { if (wakeLock) wakeLock.release().then(()=>wakeLock=null); }
-
-        // === TIMER FUNKTIONEN ===
-        function startTimer() {
-            if (isRunning) return;
-            isRunning = true; isPaused = false; requestWakeLock(); runRepetition();
-        }
-        function pauseTimer() {
-            if (!isRunning) return;
-            isPaused = true; clearInterval(timerInterval); releaseWakeLock(); activeCircle.style.display = 'none';
-        }
-        function stopTimer() {
-            isRunning = false; isPaused = false; clearInterval(timerInterval); releaseWakeLock(); resetTimer();
-        }
-        function resetTimer() {
-            currentRepetitionIndex = 0; remainingTime = 0;
-            digitalTimer.textContent = '00:00';
-            ctxActive.clearRect(0, 0, activeCircle.width, activeCircle.height);
-            activeCircle.style.display = 'none';
-            generateRepetitionList();
-        }
-        function runRepetition() {
-            if (currentRepetitionIndex >= repetitionsData.length) {
-                endSound.play(); releaseWakeLock(); isRunning = false;
-                markAsCompleted(currentRepetitionIndex - 1); return;
-            }
-            const currentItem = repetitionsData[currentRepetitionIndex];
-            remainingTime = currentItem.Time; updateRepetitionList();
-            updateDigitalTimer(); drawActiveCircle();
-            activeCircle.style.display = 'block';
-            startSound.play();
-            timerInterval = setInterval(() => {
-                if (!isPaused) {
-                    remainingTime--;
-                    updateDigitalTimer();
-                    drawActiveCircle();
-                    if (remainingTime > 20 && remainingTime % 10 === 0) signalSound.play();
-                    else if (remainingTime <= 20 && remainingTime > 5 && remainingTime % 5 === 0) signalSound.play();
-                    else if (remainingTime === 8 || remainingTime === 6) signalSound.play();
-                    else if (remainingTime <= 5 && remainingTime > 0) signalSound.play();
-                    if (remainingTime <= 0) {
-                        endSound.play(); clearInterval(timerInterval);
-                        if (currentRepetitionIndex === repetitionsData.length - 1) markAsCompleted(currentRepetitionIndex);
-                        currentRepetitionIndex++; setTimeout(runRepetition, 1000);
-                    }
-                }
-            }, 1000);
-        }
-        function markAsCompleted(index) {
-            const item = document.querySelector(`.repetition-item[data-index="${index}"]`);
-            if (item) {
-                item.classList.add('completed');
-                item.classList.remove('active');
-                const status = item.querySelector('td:nth-child(3)');
-                status.textContent = 'done';
-            }
-        }
-        function updateDigitalTimer() {
-            const minutes = Math.floor(remainingTime / 60).toString().padStart(2, '0');
-            const seconds = (remainingTime % 60).toString().padStart(2, '0');
-            digitalTimer.textContent = `${minutes}:${seconds}`;
-        }
-        function updateRepetitionList() {
-            const items = document.querySelectorAll('.repetition-item');
-            items.forEach((item, index) => {
-                const status = item.querySelector('td:nth-child(3)');
-                if (index < currentRepetitionIndex) {
-                    item.classList.add('completed'); item.classList.remove('active'); status.textContent = 'done';
-                } else if (index === currentRepetitionIndex) {
-                    item.classList.add('active'); item.classList.remove('completed'); status.textContent = 'active';
-                } else status.textContent = 'soon';
-            });
-        }
-        function drawActiveCircle() {
-            ctxActive.clearRect(0, 0, activeCircle.width, activeCircle.height);
-            const total = repetitionsData[currentRepetitionIndex].Time;
-            const seconds = total;
-            const anglePerSecond = (2 * Math.PI) / seconds;
-            const startAngle = -Math.PI / 2;
-            const currentSecond = seconds - remainingTime;
-            for (let i = 0; i < currentSecond; i++) {
-                ctxActive.beginPath();
-                ctxActive.moveTo(radius + 10, radius + 10);
-                ctxActive.arc(radius + 10, radius + 10, radius, startAngle + i * anglePerSecond, startAngle + (i + 1) * anglePerSecond);
-                ctxActive.closePath();
-                ctxActive.fillStyle = 'green'; ctxActive.fill();
-            }
-            for (let i = currentSecond; i < seconds; i++) {
-                ctxActive.beginPath();
-                ctxActive.moveTo(radius + 10, radius + 10);
-                ctxActive.arc(radius + 10, radius + 10, radius, startAngle + i * anglePerSecond, startAngle + (i + 1) * anglePerSecond);
-                ctxActive.closePath();
-                ctxActive.fillStyle = repetitionsData[currentRepetitionIndex].Exercises.toLowerCase() === 'pause' ? 'lightgreen' : 'red';
-                ctxActive.fill();
-            }
-        }
-        // === EVENT HANDLER ===
-        startBtn.addEventListener('click', startTimer);
-        pauseBtn.addEventListener('click', pauseTimer);
-        stopBtn.addEventListener('click', stopTimer);
-        resetBtn.addEventListener('click', resetTimer);
-
-        // === BEARBEITEN-FUNKTIONEN ===
-        editBtn.addEventListener('click', () => {
-            editSection.style.display = "block";
-            editForm.innerHTML = '';
-            repetitionsData.forEach((item, i) => {
-                editForm.innerHTML += `
-                  <input type="number" min="1" value="${item.Time}" id="time-${i}" style="width:60px;">
-                  <input type="text" value="${item.Exercises}" id="exercise-${i}" style="width:100px;">
-                  <button type="button" onclick="removeRepetition(${i})">Löschen</button><br>
-                `;
-            });
-            editForm.innerHTML += `<button type="button" onclick="addRepetition()">Hinzufügen</button>`;
-        });
-        window.removeRepetition = (index) => { repetitionsData.splice(index, 1); editBtn.click(); }
-        window.addRepetition = () => { repetitionsData.push({ Time: 30, Exercises: 'Übung' }); editBtn.click(); }
-        saveBtn.addEventListener('click', () => {
-            for (let i = 0; i < repetitionsData.length; i++) {
-                repetitionsData[i].Time = parseInt(document.getElementById(`time-${i}`).value, 10);
-                repetitionsData[i].Exercises = document.getElementById(`exercise-${i}`).value;
-            }
-            localStorage.setItem("sporttimer", JSON.stringify(repetitionsData));
-            generateRepetitionList();
-            editSection.style.display = "none";
-        });
-
-        // === INIT ===
-        generateRepetitionList();
-        document.addEventListener('visibilitychange', () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
-        });
-
-        // === SERVICE WORKER REGISTRIEREN ===
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
-        }
-    </script>
+if ('serviceWorker' in navigator)
+  navigator.serviceWorker.register('service-worker.js');
+</script>
 </body>
 </html>
