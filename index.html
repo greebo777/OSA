@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport-Timer</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" sizes="192x192" href="icon-192.png">
+    <meta name="theme-color" content="#4CAF50">
+    <style>
+        /* === CSS-VARIABLEN (Light/Dark) === */
+        :root, [data-theme="light"] {
+            --bg:           #f4f4f4;
+            --surface:      #ffffff;
+            --text:         #222222;
+            --text-muted:   #555555;
+            --border:       #dddddd;
+            --accent:       #4CAF50;
+            --accent-dark:  #388E3C;
+            --btn-bg:       #4CAF50;
+            --btn-text:     #ffffff;
+            --btn-hover:    #388E3C;
+            --danger:       #e53935;
+            --danger-hover: #b71c1c;
+            --pause-btn:    #f57c00;
+            --pause-hover:  #e65100;
+            --work-color:   #fff9c4;
+            --pause-color:  #c8e6c9;
+            --active-row:   #ffe082;
+            --done-row:     #e0e0e0;
+            --timer-text:   #1a1a1a;
+            --shadow:       0 2px 8px rgba(0,0,0,0.10);
+        }
+        [data-theme="dark"] {
+            --bg:           #1a1a2e;
+            --surface:      #16213e;
+            --text:         #e0e0e0;
+            --text-muted:   #9e9e9e;
+            --border:       #2a2a4a;
+            --accent:       #4CAF50;
+            --accent-dark:  #66BB6A;
+            --btn-bg:       #388E3C;
+            --btn-text:     #ffffff;
+            --btn-hover:    #4CAF50;
+            --danger:       #ef5350;
+            --danger-hover: #e53935;
+            --pause-btn:    #f57c00;
+            --pause-hover:  #ff9800;
+            --work-color:   #2e2a00;
+            --pause-color:  #0a2e0a;
+            --active-row:   #4a3900;
+            --done-row:     #2a2a2a;
+            --timer-text:   #e0e0e0;
+            --shadow:       0 2px 8px rgba(0,0,0,0.40);
+        }
+
+        /* === RESET & BASE === */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* === LAYOUT === */
+        .app-grid {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 8px 16px;
+        }
+
+        /* Kopfzeile */
+        .control-grid {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 2px solid var(--accent);
+            margin-bottom: 12px;
+        }
+        .modul-menu-grid {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+        .mode-grid { display: flex; align-items: center; gap: 10px; }
+
+        /* Theme-Schalter */
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        #theme-toggle {
+            appearance: none;
+            width: 40px; height: 22px;
+            background: var(--border);
+            border-radius: 11px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #theme-toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 16px; height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: left 0.3s;
+        }
+        #theme-toggle:checked { background: var(--accent); }
+        #theme-toggle:checked::after { left: 21px; }
+
+        /* Modul-Container */
+        .modul-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modul-control-grid {
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 10px 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        /* Lautstärke */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        #volume-slider {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* Haupt-Arbeitsbereich */
+        .work-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* Tabellen-Bereich */
+        .table-grid {
+            flex: 1 1 280px;
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            min-width: 0;
+        }
+        .table-grid h2 {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        #edit-btn {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            margin-bottom: 8px;
+            background: var(--surface);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        #edit-btn:hover { background: var(--accent); color: #fff; }
+
+        /* Edit-Formular */
+        #edit-section {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+        }
+        #edit-form input[type="number"],
+        #edit-form input[type="text"] {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin-bottom: 4px;
+        }
+        #edit-form button {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+        #edit-form button:hover { background: var(--danger-hover); }
+        #save-btn {
+            margin-top: 8px;
+            padding: 5px 14px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        #save-btn:hover { background: var(--accent-dark); }
+
+        /* Tabelle */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        thead th {
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 4px 6px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        .repetition-item td {
+            padding: 5px 6px;
+            border-radius: 3px;
+        }
+        .repetition-item.active {
+            background: var(--active-row) !important;
+            font-weight: 700;
+        }
+        .repetition-item.completed {
+            background: var(--done-row) !important;
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        /* Timer-Bereich */
+        .timer-grid {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .digital-timer-grid {
+            font-size: 3rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 3px;
+            color: var(--timer-text);
+        }
+        .analog-timer-grid canvas {
+            display: block;
+        }
+
+        /* Buttons */
+        .modul-button-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 12px 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .modul-button-grid button {
+            flex: 1 1 80px;
+            padding: 10px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .modul-button-grid button:active { transform: scale(0.97); }
+        #start-btn { background: var(--btn-bg); color: var(--btn-text); }
+        #start-btn:hover { background: var(--btn-hover); }
+        #pause-btn { background: var(--pause-btn); color: #fff; }
+        #pause-btn:hover { background: var(--pause-hover); }
+        #stop-btn  { background: var(--danger); color: #fff; }
+        #stop-btn:hover { background: var(--danger-hover); }
+        #reset-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        #reset-btn:hover { background: var(--border); }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .digital-timer-grid { font-size: 2.2rem; }
+            .work-grid { flex-direction: column; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="app-grid">
+        <div class="control-grid">
+            <div class="modul-menu-grid">Sport-Timer</div>
+            <div class="mode-grid">
+                <div class="theme-switch">
+                    <label for="theme-toggle">Dunkelmodus</label>
+                    <input type="checkbox" id="theme-toggle">
+                </div>
+            </div>
+        </div>
+        <div class="modul-grid">
+            <div class="modul-control-grid">
+                <div class="volume-control">
+                    <label for="volume-slider">Lautstärke</label>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+                </div>
+            </div>
+            <div class="work-grid">
+                <div class="table-grid">
+                    <h2>Aktuelles Set</h2>
+                    <button id="edit-btn">Bearbeiten</button>
+                    <div id="edit-section" style="display:none;">
+                      <form id="edit-form"></form>
+                      <button id="save-btn" type="button">Speichern</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Zeit</th>
+                                <th>Übung</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="repetition-list" id="repetition-list">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="timer-grid">
+                    <div class="digital-timer-grid" id="digital-timer">00:00</div>
+                    <div class="analog-timer-grid">
+                        <canvas id="active-circle" width="200" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="modul-button-grid controls">
+                <button id="start-btn">Start</button>
+                <button id="pause-btn">Pause</button>
+                <button id="stop-btn">Stopp</button>
+                <button id="reset-btn">Reset</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // === SOUND-VARIABLEN ===
+        const startSound = new Audio('start-sound.mp3');
+        const signalSound = new Audio('signal-sound.mp3');
+        const endSound = new Audio('end-sound.mp3');
+
+        // === TIMERDATEN (wird in LocalStorage gespeichert!) ===
+        let repetitionsData = JSON.parse(localStorage.getItem("sporttimer") || "null") || [
+            { Time: 3, Exercises: 'Start' },
+            { Time: 45, Exercises: 'Wallsit' },
+            { Time: 30, Exercises: 'Pause' },
+            { Time: 45, Exercises: 'Wallsit' },
+            { Time: 30, Exercises: 'Pause' },
+            { Time: 45, Exercises: 'Wallsit' }
+        ];
+
+        // === DOM-Elemente ===
+        const repetitionList = document.getElementById('repetition-list');
+        const digitalTimer = document.getElementById('digital-timer');
+        const activeCircle = document.getElementById('active-circle');
+        const volumeSlider = document.getElementById('volume-slider');
+        const themeToggle = document.getElementById('theme-toggle');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const editBtn = document.getElementById('edit-btn');
+        const editSection = document.getElementById('edit-section');
+        const editForm = document.getElementById('edit-form');
+        const saveBtn = document.getElementById('save-btn');
+        // === CANVAS ===
+        const ctxActive = activeCircle.getContext('2d');
+        const radius = activeCircle.width / 2 - 10;
+        // === TIMER-VARIABLEN ===
+        let currentRepetitionIndex = 0;
+        let remainingTime = 0;
+        let timerInterval = null;
+        let isPaused = false;
+        let isRunning = false;
+
+        // === SOUND-LAUTSTÄRKE ===
+        function setVolume(val) {
+          startSound.volume = val;
+          signalSound.volume = val;
+          endSound.volume = val;
+        }
+        setVolume(volumeSlider.value);
+        volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+
+        // === THEME ===
+        themeToggle.addEventListener('change', () => {
+            document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+        });
+
+        // === TIMER-LISTE ERZEUGEN ===
+        function generateRepetitionList() {
+            repetitionList.innerHTML = '';
+            repetitionsData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.classList.add('repetition-item');
+                if (item.Exercises.toLowerCase() === 'pause') {
+                    tr.style.backgroundColor = 'var(--pause-color)';
+                } else {
+                    tr.style.backgroundColor = 'var(--work-color)';
+                }
+                tr.setAttribute('data-index', index);
+                tr.innerHTML = `
+                    <td>${item.Time}s</td>
+                    <td>${item.Exercises}</td>
+                    <td id="status-${index}">soon</td>
+                `;
+                repetitionList.appendChild(tr);
+            });
+        }
+
+        // === WAKE LOCK ===
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) {}
+        }
+        function releaseWakeLock() { if (wakeLock) wakeLock.release().then(()=>wakeLock=null); }
+
+        // === TIMER FUNKTIONEN ===
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true; isPaused = false; requestWakeLock(); runRepetition();
+        }
+        function pauseTimer() {
+            if (!isRunning) return;
+            isPaused = true; clearInterval(timerInterval); releaseWakeLock(); activeCircle.style.display = 'none';
+        }
+        function stopTimer() {
+            isRunning = false; isPaused = false; clearInterval(timerInterval); releaseWakeLock(); resetTimer();
+        }
+        function resetTimer() {
+            currentRepetitionIndex = 0; remainingTime = 0;
+            digitalTimer.textContent = '00:00';
+            ctxActive.clearRect(0, 0, activeCircle.width, activeCircle.height);
+            activeCircle.style.display = 'none';
+            generateRepetitionList();
+        }
+        function runRepetition() {
+            if (currentRepetitionIndex >= repetitionsData.length) {
+                endSound.play(); releaseWakeLock(); isRunning = false;
+                markAsCompleted(currentRepetitionIndex - 1); return;
+            }
+            const currentItem = repetitionsData[currentRepetitionIndex];
+            remainingTime = currentItem.Time; updateRepetitionList();
+            updateDigitalTimer(); drawActiveCircle();
+            activeCircle.style.display = 'block';
+            startSound.play();
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    remainingTime--;
+                    updateDigitalTimer();
+                    drawActiveCircle();
+                    if (remainingTime > 20 && remainingTime % 10 === 0) signalSound.play();
+                    else if (remainingTime <= 20 && remainingTime > 5 && remainingTime % 5 === 0) signalSound.play();
+                    else if (remainingTime === 8 || remainingTime === 6) signalSound.play();
+                    else if (remainingTime <= 5 && remainingTime > 0) signalSound.play();
+                    if (remainingTime <= 0) {
+                        endSound.play(); clearInterval(timerInterval);
+                        if (currentRepetitionIndex === repetitionsData.length - 1) markAsCompleted(currentRepetitionIndex);
+                        currentRepetitionIndex++; setTimeout(runRepetition, 1000);
+                    }
+                }
+            }, 1000);
+        }
+        function markAsCompleted(index) {
+            const item = document.querySelector(`.repetition-item[data-index="${index}"]`);
+            if (item) {
+                item.classList.add('completed');
+                item.classList.remove('active');
+                const status = item.querySelector('td:nth-child(3)');
+                status.textContent = 'done';
+            }
+        }
+        function updateDigitalTimer() {
+            const minutes = Math.floor(remainingTime / 60).toString().padStart(2, '0');
+            const seconds = (remainingTime % 60).toString().padStart(2, '0');
+            digitalTimer.textContent = `${minutes}:${seconds}`;
+        }
+        function updateRepetitionList() {
+            const items = document.querySelectorAll('.repetition-item');
+            items.forEach((item, index) => {
+                const status = item.querySelector('td:nth-child(3)');
+                if (index < currentRepetitionIndex) {
+                    item.classList.add('completed'); item.classList.remove('active'); status.textContent = 'done';
+                } else if (index === currentRepetitionIndex) {
+                    item.classList.add('active'); item.classList.remove('completed'); status.textContent = 'active';
+                } else status.textContent = 'soon';
+            });
+        }
+        function drawActiveCircle() {
+            ctxActive.clearRect(0, 0, activeCircle.width, activeCircle.height);
+            const total = repetitionsData[currentRepetitionIndex].Time;
+            const seconds = total;
+            const anglePerSecond = (2 * Math.PI) / seconds;
+            const startAngle = -Math.PI / 2;
+            const currentSecond = seconds - remainingTime;
+            for (let i = 0; i < currentSecond; i++) {
+                ctxActive.beginPath();
+                ctxActive.moveTo(radius + 10, radius + 10);
+                ctxActive.arc(radius + 10, radius + 10, radius, startAngle + i * anglePerSecond, startAngle + (i + 1) * anglePerSecond);
+                ctxActive.closePath();
+                ctxActive.fillStyle = 'green'; ctxActive.fill();
+            }
+            for (let i = currentSecond; i < seconds; i++) {
+                ctxActive.beginPath();
+                ctxActive.moveTo(radius + 10, radius + 10);
+                ctxActive.arc(radius + 10, radius + 10, radius, startAngle + i * anglePerSecond, startAngle + (i + 1) * anglePerSecond);
+                ctxActive.closePath();
+                ctxActive.fillStyle = repetitionsData[currentRepetitionIndex].Exercises.toLowerCase() === 'pause' ? 'lightgreen' : 'red';
+                ctxActive.fill();
+            }
+        }
+        // === EVENT HANDLER ===
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        stopBtn.addEventListener('click', stopTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // === BEARBEITEN-FUNKTIONEN ===
+        editBtn.addEventListener('click', () => {
+            editSection.style.display = "block";
+            editForm.innerHTML = '';
+            repetitionsData.forEach((item, i) => {
+                editForm.innerHTML += `
+                  <input type="number" min="1" value="${item.Time}" id="time-${i}" style="width:60px;">
+                  <input type="text" value="${item.Exercises}" id="exercise-${i}" style="width:100px;">
+                  <button type="button" onclick="removeRepetition(${i})">Löschen</button><br>
+                `;
+            });
+            editForm.innerHTML += `<button type="button" onclick="addRepetition()">Hinzufügen</button>`;
+        });
+        window.removeRepetition = (index) => { repetitionsData.splice(index, 1); editBtn.click(); }
+        window.addRepetition = () => { repetitionsData.push({ Time: 30, Exercises: 'Übung' }); editBtn.click(); }
+        saveBtn.addEventListener('click', () => {
+            for (let i = 0; i < repetitionsData.length; i++) {
+                repetitionsData[i].Time = parseInt(document.getElementById(`time-${i}`).value, 10);
+                repetitionsData[i].Exercises = document.getElementById(`exercise-${i}`).value;
+            }
+            localStorage.setItem("sporttimer", JSON.stringify(repetitionsData));
+            generateRepetitionList();
+            editSection.style.display = "none";
+        });
+
+        // === INIT ===
+        generateRepetitionList();
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+        });
+
+        // === SERVICE WORKER REGISTRIEREN ===
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+</body>
+</html>
