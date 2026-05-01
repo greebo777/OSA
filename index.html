@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sport-Timer</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" sizes="192x192" href="icon-192.png">
+    <meta name="theme-color" content="#4CAF50">
+    <style>
+        /* Hier kannst du direkt dein CSS aus der bisherigen Datei übernehmen! */
+        /* ... (CSS wie im Original) ... */
+    </style>
+</head>
+<body data-theme="light">
+    <div class="app-grid">
+        <div class="control-grid">
+            <div class="modul-menu-grid">Sport-Timer</div>
+            <div class="mode-grid">
+                <div class="theme-switch">
+                    <label for="theme-toggle">Dunkelmodus</label>
+                    <input type="checkbox" id="theme-toggle">
+                </div>
+            </div>
+        </div>
+        <div class="modul-grid">
+            <div class="modul-control-grid">
+                <div class="volume-control">
+                    <label for="volume-slider">Lautstärke</label>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+                </div>
+            </div>
+            <div class="work-grid">
+                <div class="table-grid">
+                    <h2>Aktuelles Set</h2>
+                    <button id="edit-btn">Bearbeiten</button>
+                    <div id="edit-section" style="display:none;">
+                      <form id="edit-form"></form>
+                      <button id="save-btn" type="button">Speichern</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Zeit</th>
+                                <th>Übung</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="repetition-list" id="repetition-list">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="timer-grid">
+                    <div class="digital-timer-grid" id="digital-timer">00:00</div>
+                    <div class="analog-timer-grid">
+                        <canvas id="active-circle" width="200" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="modul-button-grid controls">
+                <button id="start-btn">Start</button>
+                <button id="pause-btn">Pause</button>
+                <button id="stop-btn">Stopp</button>
+                <button id="reset-btn">Reset</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // === SOUND-VARIABLEN ===
+        const startSound = new Audio('start-sound.mp3');
+        const signalSound = new Audio('signal-sound.mp3');
+        const endSound = new Audio('end-sound.mp3');
+
+        // === TIMERDATEN (wird in LocalStorage gespeichert!) ===
+        let repetitionsData = JSON.parse(localStorage.getItem("sporttimer") || "null") || [
+            { Time: 3, Exercises: 'Start' },
+            { Time: 45, Exercises: 'Wallsit' },
+            { Time: 30, Exercises: 'Pause' },
+            { Time: 45, Exercises: 'Wallsit' },
+            { Time: 30, Exercises: 'Pause' },
+            { Time: 45, Exercises: 'Wallsit' }
+        ];
+
+        // === DOM-Elemente ===
+        const repetitionList = document.getElementById('repetition-list');
+        const digitalTimer = document.getElementById('digital-timer');
+        const activeCircle = document.getElementById('active-circle');
+        const volumeSlider = document.getElementById('volume-slider');
+        const themeToggle = document.getElementById('theme-toggle');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const editBtn = document.getElementById('edit-btn');
+        const editSection = document.getElementById('edit-section');
+        const editForm = document.getElementById('edit-form');
+        const saveBtn = document.getElementById('save-btn');
+        // === CANVAS ===
+        const ctxActive = activeCircle.getContext('2d');
+        const radius = activeCircle.width / 2 - 10;
+        // === TIMER-VARIABLEN ===
+        let currentRepetitionIndex = 0;
+        let remainingTime = 0;
+        let timerInterval = null;
+        let isPaused = false;
+        let isRunning = false;
+
+        // === SOUND-LAUTSTÄRKE ===
+        function setVolume(val) {
+          startSound.volume = val;
+          signalSound.volume = val;
+          endSound.volume = val;
+        }
+        setVolume(volumeSlider.value);
+        volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+
+        // === THEME ===
+        themeToggle.addEventListener('change', () => {
+            document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+        });
+
+        // === TIMER-LISTE ERZEUGEN ===
+        function generateRepetitionList() {
+            repetitionList.innerHTML = '';
+            repetitionsData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.classList.add('repetition-item');
+                if (item.Exercises.toLowerCase() === 'pause') {
+                    tr.style.backgroundColor = 'var(--pause-color)';
+                } else {
+                    tr.style.backgroundColor = 'var(--work-color)';
+                }
+                tr.setAttribute('data-index', index);
+                tr.innerHTML = `
+                    <td>${item.Time}s</td>
+                    <td>${item.Exercises}</td>
+                    <td id="status-${index}">soon</td>
+                `;
+                repetitionList.appendChild(tr);
+            });
+        }
+
+        // === WAKE LOCK ===
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) {}
+        }
+        function releaseWakeLock() { if (wakeLock) wakeLock.release().then(()=>wakeLock=null); }
+
+        // === TIMER FUNKTIONEN ===
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true; isPaused = false; requestWakeLock(); runRepetition();
+        }
+        function pauseTimer() {
+            if (!isRunning) return;
+            isPaused = true; clearInterval(timerInterval); releaseWakeLock(); activeCircle.style.display = 'none';
+        }
+        function stopTimer() {
+            isRunning = false; isPaused = false; clearInterval(timerInterval); releaseWakeLock(); resetTimer();
+        }
+        function resetTimer() {
+            currentRepetitionIndex = 0; remainingTime = 0;
+            digitalTimer.textContent = '00:00';
+            ctxActive.clearRect(0, 0, activeCircle.width, activeCircle.height);
+            activeCircle.style.display = 'none';
+            generateRepetitionList();
+        }
+        function runRepetition() {
+            if (currentRepetitionIndex >= repetitionsData.length) {
+                endSound.play(); releaseWakeLock(); isRunning = false;
+                markAsCompleted(currentRepetitionIndex - 1); return;
+            }
+            const currentItem = repetitionsData[currentRepetitionIndex];
+            remainingTime = currentItem.Time; updateRepetitionList();
+            updateDigitalTimer(); drawActiveCircle();
+            activeCircle.style.display = 'block';
+            startSound.play();
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    remainingTime--;
+                    updateDigitalTimer();
+                    drawActiveCircle();
+                    if (remainingTime > 20 && remainingTime % 10 === 0) signalSound.play();
+                    else if (remainingTime <= 20 && remainingTime > 5 && remainingTime % 5 === 0) signalSound.play();
+                    else if (remainingTime === 8 || remainingTime === 6) signalSound.play();
+                    else if (remainingTime <= 5 && remainingTime > 0) signalSound.play();
+                    if (remainingTime <= 0) {
+                        endSound.play(); clearInterval(timerInterval);
+                        if (currentRepetitionIndex === repetitionsData.length - 1) markAsCompleted(currentRepetitionIndex);
+                        currentRepetitionIndex++; setTimeout(runRepetition, 1000);
+                    }
+                }
+            }, 1000);
+        }
+        function markAsCompleted(index) {
+            const item = document.querySelector(`.repetition-item[data-index="${index}"]`);
+            if (item) {
+                item.classList.add('completed');
+                item.classList.remove('active');
+                const status = item.querySelector('td:nth-child(3)');
+                status.textContent = 'done';
+            }
+        }
+        function updateDigitalTimer() {
+            const minutes = Math.floor(remainingTime / 60).toString().padStart(2, '0');
+            const seconds = (remainingTime % 60).toString().padStart(2, '0');
+            digitalTimer.textContent = `${minutes}:${seconds}`;
+        }
+        function updateRepetitionList() {
+            const items = document.querySelectorAll('.repetition-item');
+            items.forEach((item, index) => {
+                const status = item.querySelector('td:nth-child(3)');
+                if (index < currentRepetitionIndex) {
+                    item.classList.add('completed'); item.classList.remove('active'); status.textContent = 'done';
+                } else if (index === currentRepetitionIndex) {
+                    item.classList.add('active'); item.classList.remove('completed'); status.textContent = 'active';
+                } else status.textContent = 'soon';
+            });
+        }
+        function drawActiveCircle() {
+            ctxActive.clearRect(0, 0, activeCircle.width, activeCircle.height);
+            const total = repetitionsData[currentRepetitionIndex].Time;
+            const seconds = total;
+            const anglePerSecond = (2 * Math.PI) / seconds;
+            const startAngle = -Math.PI / 2;
+            const currentSecond = seconds - remainingTime;
+            for (let i = 0; i < currentSecond; i++) {
+                ctxActive.beginPath();
+                ctxActive.moveTo(radius + 10, radius + 10);
+                ctxActive.arc(radius + 10, radius + 10, radius, startAngle + i * anglePerSecond, startAngle + (i + 1) * anglePerSecond);
+                ctxActive.closePath();
+                ctxActive.fillStyle = 'green'; ctxActive.fill();
+            }
+            for (let i = currentSecond; i < seconds; i++) {
+                ctxActive.beginPath();
+                ctxActive.moveTo(radius + 10, radius + 10);
+                ctxActive.arc(radius + 10, radius + 10, radius, startAngle + i * anglePerSecond, startAngle + (i + 1) * anglePerSecond);
+                ctxActive.closePath();
+                ctxActive.fillStyle = repetitionsData[currentRepetitionIndex].Exercises.toLowerCase() === 'pause' ? 'lightgreen' : 'red';
+                ctxActive.fill();
+            }
+        }
+        // === EVENT HANDLER ===
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        stopBtn.addEventListener('click', stopTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // === BEARBEITEN-FUNKTIONEN ===
+        editBtn.addEventListener('click', () => {
+            editSection.style.display = "block";
+            editForm.innerHTML = '';
+            repetitionsData.forEach((item, i) => {
+                editForm.innerHTML += `
+                  <input type="number" min="1" value="${item.Time}" id="time-${i}" style="width:60px;">
+                  <input type="text" value="${item.Exercises}" id="exercise-${i}" style="width:100px;">
+                  <button type="button" onclick="removeRepetition(${i})">Löschen</button><br>
+                `;
+            });
+            editForm.innerHTML += `<button type="button" onclick="addRepetition()">Hinzufügen</button>`;
+        });
+        window.removeRepetition = (index) => { repetitionsData.splice(index, 1); editBtn.click(); }
+        window.addRepetition = () => { repetitionsData.push({ Time: 30, Exercises: 'Übung' }); editBtn.click(); }
+        saveBtn.addEventListener('click', () => {
+            for (let i = 0; i < repetitionsData.length; i++) {
+                repetitionsData[i].Time = parseInt(document.getElementById(`time-${i}`).value, 10);
+                repetitionsData[i].Exercises = document.getElementById(`exercise-${i}`).value;
+            }
+            localStorage.setItem("sporttimer", JSON.stringify(repetitionsData));
+            generateRepetitionList();
+            editSection.style.display = "none";
+        });
+
+        // === INIT ===
+        generateRepetitionList();
+        document.addEventListener('visibilitychange', () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+        });
+
+        // === SERVICE WORKER REGISTRIEREN ===
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+</body>
+</html>
