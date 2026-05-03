@@ -182,6 +182,23 @@
     .slot-card { background: var(--surface); border-radius: 12px; padding: 14px;
       margin-bottom: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); }
     .slot-header { font-size: .85rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+    .slot-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+    /* PLAN */
+    .plan-card { display: flex; align-items: center; gap: 12px; background: var(--surface);
+      border-radius: 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border);
+      box-shadow: var(--shadow); position: relative; }
+    .plan-order { width: 24px; height: 24px; background: var(--surface2); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; }
+    .plan-info { flex: 1; }
+    .plan-name { font-weight: 700; font-size: .95rem; }
+    .plan-meta { font-size: .75rem; color: var(--text-muted); }
+    .plan-actions { display: flex; gap: 6px; }
+
+    /* NOTES */
+    .note-box { font-size: .82rem; font-style: italic; color: var(--text-muted);
+      background: var(--surface2); padding: 8px; border-radius: 6px; margin-top: 6px;
+      border-left: 3px solid var(--accent); }
 
     /* WORKOUT RUN */
     .run-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -232,6 +249,7 @@
   <button class="drawer-item" id="m-download">&#128229;&nbsp; Download JSON</button>
   <button class="drawer-item" id="m-add-workout">&#43;&nbsp; Workout erstellen</button>
   <button class="drawer-item" id="m-workouts">&#128203;&nbsp; Workouts</button>
+  <button class="drawer-item" id="m-plan">&#128197;&nbsp; Plan / Queue</button>
   <button class="drawer-item" id="m-home">&#127968;&nbsp; Module</button>
   <div class="drawer-setting">
     <div class="drawer-setting-label">
@@ -265,11 +283,29 @@ function loadS() {
   try { S = JSON.parse(localStorage.getItem(SK)) || {}; } catch { S = {}; }
   S.modules  = S.modules  || [];
   S.workouts = S.workouts || [];
+  S.plan     = S.plan     || []; // Array of workout IDs
   S.theme    = S.theme    || 'light';
   S.volume   = S.volume   !== undefined ? S.volume : 0.5;
   return S;
 }
 function saveS() { localStorage.setItem(SK, JSON.stringify(S)); }
+
+async function shareApp() {
+  const data = JSON.stringify(S, null, 2);
+  const file = new File([data], 'osa-training.json', { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: 'OSA Sport Training Export',
+        text: 'Hier ist mein aktueller Trainingsstand von OSA Sport.'
+      });
+      toast('Erfolgreich geteilt');
+    } catch (e) { if (e.name !== 'AbortError') dlJSON(); }
+  } else {
+    dlJSON();
+  }
+}
 function uid() {
   return typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
@@ -303,6 +339,7 @@ function go(view, params = {}) {
     workoutCreate: [viewWorkoutCreate, bindWorkoutCreate],
     workoutList:   [viewWorkoutList,   bindWorkoutList],
     workoutRun:    [viewWorkoutRun,    bindWorkoutRun],
+    plan:          [viewPlan,          bindPlan],
     timerRun:      [viewTimerRun,      bindTimerRun],
   };
   const [render, bind] = map[view] || map.home;
@@ -323,7 +360,8 @@ function drawerGo(view) { closeDrawer(); go(view); }
 document.getElementById('m-home').addEventListener('click',       () => drawerGo('home'));
 document.getElementById('m-add-workout').addEventListener('click',() => drawerGo('workoutCreate'));
 document.getElementById('m-workouts').addEventListener('click',   () => drawerGo('workoutList'));
-document.getElementById('m-download').addEventListener('click',   () => { closeDrawer(); dlJSON(); });
+document.getElementById('m-plan').addEventListener('click',       () => drawerGo('plan'));
+document.getElementById('m-download').addEventListener('click',   () => { closeDrawer(); shareApp(); });
 document.getElementById('m-upload').addEventListener('click',     () => { closeDrawer(); document.getElementById('file-input').click(); });
 
 // Theme
@@ -545,13 +583,19 @@ function viewWorkoutCreate() {
         <select class="form-select" id="s-mod-${i}">
           <option value="">-- Modul wählen --</option>${opts}
         </select></div>
-      <div class="form-group"><label class="form-label">Intensität (z.B. 3&times;60s)</label>
-        <input class="form-input" id="s-int-${i}" type="text" placeholder="3&times;60s"></div>
+      <div class="slot-row">
+        <div class="form-group"><label class="form-label">Sätze</label>
+          <input class="form-input" id="s-sets-${i}" type="number" min="1" value="3"></div>
+        <div class="form-group"><label class="form-label">Intensität</label>
+          <input class="form-input" id="s-int-${i}" type="text" placeholder="z.B. 60s" value=""></div>
+      </div>
+      <div class="form-group"><label class="form-label">Physio-Notiz (optional)</label>
+        <input class="form-input" id="s-note-${i}" type="text" placeholder="Becken stabil halten..."></div>
     </div>`;
   }
   return `<button class="btn-back" id="back">&#8592; Zurück</button>
     <div class="form-group"><label class="form-label">Workout-Name</label>
-      <input class="form-input" id="w-name" type="text" placeholder="z.B. Leg Day A"></div>
+      <input class="form-input" id="w-name" type="text" placeholder="z.B. Physio Rücken"></div>
     ${slots}
     <button class="btn-primary" id="save-w">Workout speichern</button>`;
 }
@@ -564,10 +608,14 @@ function bindWorkoutCreate() {
     for (let i = 1; i <= 4; i++) {
       const moduleId = document.getElementById(`s-mod-${i}`)?.value;
       if (moduleId) {
+        const setCnt = parseInt(document.getElementById(`s-sets-${i}`).value) || 1;
+        const sets = [];
+        for(let s=1; s<=setCnt; s++) sets.push({ index:s, done:false });
         exercises.push({
           moduleId,
           intensity: document.getElementById(`s-int-${i}`)?.value.trim() || '',
-          sets: [{ index:1, done:false }, { index:2, done:false }, { index:3, done:false }]
+          note:      document.getElementById(`s-note-${i}`)?.value.trim() || '',
+          sets:      sets
         });
       }
     }
@@ -596,6 +644,7 @@ function viewWorkoutList() {
     const total = w.exercises.reduce((s,e)=>s+e.sets.length,0);
     const done  = w.exercises.reduce((s,e)=>s+e.sets.filter(x=>x.done).length,0);
     const pct   = total ? Math.round(done/total*100) : 0;
+    const inPlan = S.plan.includes(w.id);
     h += `<div class="card">
       <div class="card-header">
         <span class="card-title">${esc(w.name)}</span>
@@ -607,6 +656,9 @@ function viewWorkoutList() {
       </div>
       <div class="workout-actions">
         <button class="btn-load" data-id="${w.id}" data-a="run">&#9654; Laden</button>
+        <button class="btn-sm btn-edit" style="min-height:44px; flex:1" data-id="${w.id}" data-a="plan-toggle">
+          ${inPlan ? 'Aus Plan entfernen' : 'Zu Plan hinzufügen'}
+        </button>
         <button class="btn-sm btn-edit" style="min-height:44px" data-id="${w.id}" data-a="reset">Reset</button>
         <button class="btn-sm btn-del"  style="min-height:44px" data-id="${w.id}" data-a="del">Löschen</button>
       </div></div>`;
@@ -619,6 +671,12 @@ function bindWorkoutList() {
     const id = b.dataset.id, a = b.dataset.a;
     if (a === 'run') {
       const w = S.workouts.find(x => x.id === id); go('workoutRun', { workout: w });
+    } else if (a === 'plan-toggle') {
+      const idx = S.plan.indexOf(id);
+      if (idx === -1) S.plan.push(id);
+      else S.plan.splice(idx, 1);
+      saveS(); go('workoutList');
+      toast(idx === -1 ? 'Zum Plan hinzugefügt' : 'Vom Plan entfernt');
     } else if (a === 'reset') {
       const w = S.workouts.find(x => x.id === id);
       w.exercises.forEach(e => e.sets.forEach(s => s.done = false));
@@ -626,6 +684,7 @@ function bindWorkoutList() {
     } else if (a === 'del') {
       if (!confirm('Workout löschen?')) return;
       S.workouts = S.workouts.filter(x => x.id !== id);
+      S.plan = S.plan.filter(x => x !== id);
       saveS(); go('workoutList'); toast('Gelöscht');
     }
   }));
@@ -650,10 +709,11 @@ function viewWorkoutRun({ workout: w }) {
         <span class="card-title">${esc(mname)}</span>
         ${mod ? `<span class="badge ${mod.type==='timer'?'badge-timer':'badge-ex'}">${mod.type==='timer'?'Timer':'Übung'}</span>` : ''}
       </div>
-      ${ex.intensity ? `<div class="card-info">${esc(ex.intensity)}</div>` : ''}
+      ${ex.intensity ? `<div class="card-info" style="font-weight:600">${esc(ex.intensity)}</div>` : ''}
+      ${ex.note ? `<div class="note-box">${esc(ex.note)}</div>` : ''}
       ${mod?.type==='exercise'&&mod.config.imageBase64 ? `<img class="img-preview" src="${mod.config.imageBase64}" alt="">` : ''}
-      ${mod?.type==='exercise'&&mod.config.description ? `<div class="card-info">${esc(mod.config.description)}</div>` : ''}
-      <div>`;
+      ${mod?.type==='exercise'&&mod.config.description ? `<div class="card-info" style="margin-top:8px">${esc(mod.config.description)}</div>` : ''}
+      <div style="margin-top:10px">`;
     ex.sets.forEach((set, si) => {
       h += `<div class="set-row">
         <input type="checkbox" class="set-cb" data-ei="${ei}" data-si="${si}" ${set.done?'checked':''}>
@@ -663,10 +723,14 @@ function viewWorkoutRun({ workout: w }) {
     });
     h += `</div></div>`;
   });
+  h += `<button class="btn-primary" id="finish-workout" style="margin-top:20px">Workout abschließen</button>`;
   return h;
 }
 function bindWorkoutRun({ workout: w }) {
-  document.getElementById('back').addEventListener('click', () => go('workoutList'));
+  document.getElementById('back').addEventListener('click', () => {
+    const inPlan = S.plan.includes(w.id);
+    go(inPlan ? 'plan' : 'workoutList');
+  });
   document.querySelectorAll('.set-cb').forEach(cb => cb.addEventListener('change', () => {
     const ei = +cb.dataset.ei, si = +cb.dataset.si;
     w.exercises[ei].sets[si].done = cb.checked;
@@ -681,6 +745,64 @@ function bindWorkoutRun({ workout: w }) {
   document.querySelectorAll('.btn-timer').forEach(b => b.addEventListener('click', () => {
     const mod = S.modules.find(x => x.id === b.dataset.modid);
     if (mod) go('timerRun', { mod, returnTo: { view:'workoutRun', params:{ workout:w } } });
+  }));
+  document.getElementById('finish-workout').addEventListener('click', () => {
+    const idx = S.plan.indexOf(w.id);
+    if (idx !== -1) {
+      // Rotate Plan: remove and push to end
+      S.plan.splice(idx, 1);
+      S.plan.push(w.id);
+      // Optional: reset workout progress when finished in plan
+      const sw = S.workouts.find(x => x.id === w.id);
+      if (sw) sw.exercises.forEach(e => e.sets.forEach(s => s.done = false));
+      saveS();
+      toast('Plan aktualisiert: Nächstes Workout rückt nach');
+      go('plan');
+    } else {
+      go('workoutList');
+    }
+  });
+}
+
+// ── VIEW: PLAN ──────────────────────────────────────────────────
+function viewPlan() {
+  let h = `<div class="view-header"><span class="view-title">Trainings-Plan (Queue)</span></div>`;
+  if (!S.plan.length) {
+    h += `<div class="empty-state"><div class="empty-icon">&#128197;</div>
+      <p>Dein Plan ist leer.<br>Füge Workouts aus der Liste hinzu.</p>
+      <button class="btn-secondary" onclick="go('workoutList')">Workouts ansehen</button></div>`;
+    return h;
+  }
+  h += `<p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">
+    Das oberste Workout ist als Nächstes dran. Nach Abschluss wandert es ans Ende.</p>`;
+  
+  S.plan.forEach((id, idx) => {
+    const w = S.workouts.find(x => x.id === id);
+    if (!w) return;
+    const isFirst = idx === 0;
+    h += `<div class="plan-card" style="${isFirst?'border:2px solid var(--accent)':''}">
+      <div class="plan-order">${idx + 1}</div>
+      <div class="plan-info">
+        <div class="plan-name">${esc(w.name)}</div>
+        <div class="plan-meta">${w.exercises.length} Übungen</div>
+      </div>
+      <div class="plan-actions">
+        ${isFirst ? `<button class="btn-sm ctrl-start" data-id="${w.id}" data-a="run" style="color:#fff">&#9654; Start</button>` : ''}
+        <button class="btn-sm btn-del" data-id="${id}" data-a="remove" title="Aus Plan entfernen">×</button>
+      </div>
+    </div>`;
+  });
+  return h;
+}
+function bindPlan() {
+  document.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.id, a = b.dataset.a;
+    if (a === 'run') {
+      const w = S.workouts.find(x => x.id === id); go('workoutRun', { workout: w });
+    } else if (a === 'remove') {
+      S.plan = S.plan.filter(x => x !== id);
+      saveS(); go('plan'); toast('Vom Plan entfernt');
+    }
   }));
 }
 
