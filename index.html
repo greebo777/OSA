@@ -202,6 +202,31 @@
       background: var(--surface2); padding: 8px; border-radius: 6px; margin-top: 6px;
       border-left: 3px solid var(--accent); }
 
+    /* START PAGE */
+    .hero { text-align: center; padding: 30px 20px; background: var(--surface);
+      border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow);
+      margin-bottom: 24px; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; top: -50px; left: -50px;
+      width: 120px; height: 120px; background: var(--accent); opacity: 0.1;
+      border-radius: 50%; }
+    .hero-title { font-size: 1.6rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+    .hero-sub { font-size: 0.95rem; color: var(--text-muted); }
+    .quick-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .quick-card { background: var(--surface); border-radius: 16px; padding: 20px;
+      display: flex; align-items: center; gap: 16px; cursor: pointer;
+      border: 1px solid var(--border); box-shadow: var(--shadow); transition: transform .2s, border-color .2s; }
+    .quick-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .quick-icon { width: 56px; height: 56px; background: var(--surface2);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: var(--accent); }
+    .quick-text { flex: 1; }
+    .quick-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 2px; }
+    .quick-desc { font-size: 0.82rem; color: var(--text-muted); }
+    .plan-status { margin-top: 12px; padding: 12px; background: var(--pause-color);
+      border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--accent-dark);
+      display: inline-flex; align-items: center; gap: 8px; }
+    [data-theme="dark"] .plan-status { background: #0a2e0a; color: #a5d6a7; }
+
     /* WORKOUT RUN */
     .run-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
     .run-title { font-size: 1.1rem; font-weight: 700; }
@@ -336,6 +361,7 @@ function go(view, params = {}) {
   const el = document.getElementById('main');
   el.scrollTop = 0;
   const map = {
+    start:         [viewStart,         bindStart],
     home:          [viewHome,          bindHome],
     timerForm:     [viewTimerForm,     bindTimerForm],
     exerciseForm:  [viewExForm,        bindExForm],
@@ -441,6 +467,62 @@ function esc(s) {
   return String(s ?? '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── VIEW: START ──────────────────────────────────────────────────
+function viewStart() {
+  const nextWorkoutId = S.plan[0];
+  const nextWorkout = nextWorkoutId ? S.workouts.find(w => w.id === nextWorkoutId) : null;
+  
+  return `
+    <div class="hero">
+      <div class="hero-title">Willkommen bei OSA</div>
+      <div class="hero-sub">Dein persönlicher Begleiter für Physio & Sport</div>
+      ${nextWorkout ? `
+        <div class="plan-status">
+          <span>&#128197; Nächstes Workout: <strong>${esc(nextWorkout.name)}</strong></span>
+        </div>
+      ` : ''}
+    </div>
+    
+    <div class="quick-grid">
+      <div class="quick-card" data-go="plan">
+        <div class="quick-icon">&#128197;</div>
+        <div class="quick-text">
+          <div class="quick-title">Mein Plan</div>
+          <div class="quick-desc">Starte dein nächstes geplantes Training</div>
+        </div>
+        <div style="color:var(--accent)">&#10140;</div>
+      </div>
+      
+      <div class="quick-card" data-go="workoutList">
+        <div class="quick-icon">&#128203;</div>
+        <div class="quick-text">
+          <div class="quick-title">Alle Workouts</div>
+          <div class="quick-desc">Wähle aus deiner Liste von Workouts</div>
+        </div>
+        <div style="color:var(--accent)">&#10140;</div>
+      </div>
+      
+      <div class="quick-card" data-go="home">
+        <div class="quick-icon">&#127968;</div>
+        <div class="quick-text">
+          <div class="quick-title">Module</div>
+          <div class="quick-desc">Timer und Übungen verwalten</div>
+        </div>
+        <div style="color:var(--accent)">&#10140;</div>
+      </div>
+    </div>
+    
+    <div style="margin-top: 30px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+      Physio-Training: Bleib dran, jeder Satz zählt!
+    </div>
+  `;
+}
+function bindStart() {
+  document.querySelectorAll('[data-go]').forEach(el => {
+    el.addEventListener('click', () => go(el.dataset.go));
+  });
 }
 
 // ── VIEW: HOME ──────────────────────────────────────────────────
@@ -1078,7 +1160,7 @@ if (!S.modules.length) {
   } catch {}
 }
 
-go('home');
+go('start');
 
 if ('serviceWorker' in navigator)
   navigator.serviceWorker.register('service-worker.js');
