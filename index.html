@@ -73,7 +73,7 @@
 
     /* MAIN */
     .main { margin-top: var(--nav-h); min-height: calc(100vh - var(--nav-h));
-      padding: 16px; max-width: 700px; margin-left: auto; margin-right: auto; }
+      padding: 16px 16px 80px; max-width: 700px; margin-left: auto; margin-right: auto; }
 
     /* SHARED COMPONENTS */
     .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -265,6 +265,8 @@ function loadS() {
   try { S = JSON.parse(localStorage.getItem(SK)) || {}; } catch { S = {}; }
   S.modules  = S.modules  || [];
   S.workouts = S.workouts || [];
+  S.theme    = S.theme    || 'light';
+  S.volume   = S.volume   !== undefined ? S.volume : 0.5;
   return S;
 }
 function saveS() { localStorage.setItem(SK, JSON.stringify(S)); }
@@ -326,13 +328,19 @@ document.getElementById('m-upload').addEventListener('click',     () => { closeD
 
 // Theme
 const themeToggle = document.getElementById('theme-toggle');
-themeToggle.addEventListener('change', () =>
-  document.body.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light'));
+themeToggle.addEventListener('change', () => {
+  const theme = themeToggle.checked ? 'dark' : 'light';
+  document.body.setAttribute('data-theme', theme);
+  S.theme = theme; saveS();
+});
 
 // Volume
 const volSlider = document.getElementById('vol-slider');
-setVol(volSlider.value);
-volSlider.addEventListener('input', () => setVol(volSlider.value));
+volSlider.addEventListener('input', () => {
+  setVol(volSlider.value);
+  S.volume = parseFloat(volSlider.value);
+  saveS();
+});
 
 // Upload
 document.getElementById('file-input').addEventListener('change', e => {
@@ -555,13 +563,15 @@ function bindWorkoutCreate() {
     const exercises = [];
     for (let i = 1; i <= 4; i++) {
       const moduleId = document.getElementById(`s-mod-${i}`)?.value;
-      if (!moduleId) { toast(`Bitte Übung ${i} wählen`); return; }
-      exercises.push({
-        moduleId,
-        intensity: document.getElementById(`s-int-${i}`)?.value.trim() || '',
-        sets: [{ index:1, done:false }, { index:2, done:false }, { index:3, done:false }]
-      });
+      if (moduleId) {
+        exercises.push({
+          moduleId,
+          intensity: document.getElementById(`s-int-${i}`)?.value.trim() || '',
+          sets: [{ index:1, done:false }, { index:2, done:false }, { index:3, done:false }]
+        });
+      }
     }
+    if (!exercises.length) { toast('Bitte mindestens eine Übung wählen'); return; }
     S.workouts.push({ id: uid(), name, exercises });
     saveS(); go('workoutList'); toast('Workout gespeichert');
   });
@@ -855,6 +865,12 @@ function bindTimerRun({ mod, returnTo }) {
 
 // ── INIT ─────────────────────────────────────────────────────────
 loadS();
+
+// Apply settings
+document.body.setAttribute('data-theme', S.theme);
+themeToggle.checked = (S.theme === 'dark');
+volSlider.value = S.volume;
+setVol(S.volume);
 
 // Migrate old sporttimer localStorage data
 if (!S.modules.length) {
