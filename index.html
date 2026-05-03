@@ -324,7 +324,7 @@ const I18N = {
     import_ok: "Import erfolgreich", import_err: "Fehler beim Import",
     pick_type: "Modul-Typ wählen", cancel: "Abbrechen", name_req: "Bitte Name eingeben",
     image: "Bild (optional)", pick_image: "Bild wählen", description: "Beschreibung (optional)",
-    workout_name: "Workout-Name", intensity: "Intensität", physio_note: "Physio-Notiz (optional)",
+    workout_name: "Workout-Name", intensity: "Intensität", notes: "Notizen (optional)",
     add_to_plan: "Zu Plan hinzufügen", remove_from_plan: "Vom Plan entfernen",
     reset_confirm: "Fortschritt zurückgesetzt", finish_workout: "Workout abschließen",
     plan_empty: "Dein Plan ist leer.", plan_desc: "Das oberste Workout ist als Nächstes dran. Nach Abschluss wandert es ans Ende.",
@@ -350,7 +350,7 @@ const I18N = {
     import_ok: "Import successful", import_err: "Import error",
     pick_type: "Pick module type", cancel: "Cancel", name_req: "Please enter a name",
     image: "Image (optional)", pick_image: "Pick image", description: "Description (optional)",
-    workout_name: "Workout Name", intensity: "Intensity", physio_note: "Physio Note (optional)",
+    workout_name: "Workout Name", intensity: "Intensity", notes: "Notes (optional)",
     add_to_plan: "Add to plan", remove_from_plan: "Remove from plan",
     reset_confirm: "Progress reset", finish_workout: "Finish Workout",
     plan_empty: "Your plan is empty.", plan_desc: "The top workout is up next. It moves to the end once finished.",
@@ -376,7 +376,7 @@ const I18N = {
     import_ok: "Importation réussie", import_err: "Erreur d'importation",
     pick_type: "Choisir le type", cancel: "Annuler", name_req: "Veuillez entrer un nom",
     image: "Image (optionnel)", pick_image: "Choisir une image", description: "Description (optionnel)",
-    workout_name: "Nom de l'entraînement", intensity: "Intensité", physio_note: "Note physio (optionnel)",
+    workout_name: "Nom de l'entraînement", intensity: "Intensité", notes: "Notes (optionnel)",
     add_to_plan: "Ajouter au plan", remove_from_plan: "Retirer du plan",
     reset_confirm: "Progression réinitialisée", finish_workout: "Terminer l'entraînement",
     plan_empty: "Votre plan est vide.", plan_desc: "L'entraînement du haut est le suivant. Il va à la fin une fois terminé.",
@@ -402,7 +402,7 @@ const I18N = {
     import_ok: "Importación exitosa", import_err: "Error de importación",
     pick_type: "Elegir tipo", cancel: "Cancelar", name_req: "Introduce un nombre",
     image: "Imagen (opcional)", pick_image: "Elegir imagen", description: "Descripción (opcional)",
-    workout_name: "Nombre del entrenamiento", intensity: "Intensidad", physio_note: "Nota fisio (opcional)",
+    workout_name: "Nombre del entrenamiento", intensity: "Intensidad", notes: "Notas (opcional)",
     add_to_plan: "Añadir al plan", remove_from_plan: "Quitar del plan",
     reset_confirm: "Progreso reiniciado", finish_workout: "Finalizar entrenamiento",
     plan_empty: "Tu plan está vacío.", plan_desc: "El primer entrenamiento es el siguiente. Pasa al final al terminar.",
@@ -849,7 +849,7 @@ function viewWorkoutCreate({ id } = {}) {
         <div class="form-group"><label class="form-label">${t('intensity')}</label>
           <input class="form-input" id="s-int-${i}" type="text" value="${ex ? esc(ex.intensity) : ''}"></div>
       </div>
-      <div class="form-group"><label class="form-label">${t('physio_note')}</label>
+      <div class="form-group"><label class="form-label">${t('notes')}</label>
         <input class="form-input" id="s-note-${i}" type="text" value="${ex ? esc(ex.note) : ''}"></div>
     </div>`;
   }
