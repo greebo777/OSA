@@ -319,6 +319,7 @@ const I18N = {
     timer_mods: "Timer-Module", exercise_mods: "Übungs-Module", back: "Zurück",
     exercise_name: "Name der Übung", duration: "Übungszeit (s)", pause: "Pausenzeit (s)",
     sets: "Sätze", save: "Speichern", create: "Erstellen", delete_confirm: "Löschen?",
+    edit: "Bearbeiten", copy: "Kopieren",
     no_modules: "Noch keine Module.", no_workouts: "Noch keine Workouts.",
     import_ok: "Import erfolgreich", import_err: "Fehler beim Import",
     pick_type: "Modul-Typ wählen", cancel: "Abbrechen", name_req: "Bitte Name eingeben",
@@ -344,6 +345,7 @@ const I18N = {
     timer_mods: "Timer Modules", exercise_mods: "Exercise Modules", back: "Back",
     exercise_name: "Exercise Name", duration: "Duration (s)", pause: "Pause (s)",
     sets: "Sets", save: "Save", create: "Create", delete_confirm: "Delete?",
+    edit: "Edit", copy: "Copy",
     no_modules: "No modules yet.", no_workouts: "No workouts yet.",
     import_ok: "Import successful", import_err: "Import error",
     pick_type: "Pick module type", cancel: "Cancel", name_req: "Please enter a name",
@@ -369,6 +371,7 @@ const I18N = {
     timer_mods: "Modules Timer", exercise_mods: "Modules Exercice", back: "Retour",
     exercise_name: "Nom de l'exercice", duration: "Durée (s)", pause: "Pause (s)",
     sets: "Séries", save: "Sauvegarder", create: "Créer", delete_confirm: "Supprimer ?",
+    edit: "Modifier", copy: "Copier",
     no_modules: "Aucun module.", no_workouts: "Aucun entraînement.",
     import_ok: "Importation réussie", import_err: "Erreur d'importation",
     pick_type: "Choisir le type", cancel: "Annuler", name_req: "Veuillez entrer un nom",
@@ -394,6 +397,7 @@ const I18N = {
     timer_mods: "Módulos Timer", exercise_mods: "Módulos Ejercicio", back: "Atrás",
     exercise_name: "Nombre del ejercicio", duration: "Duración (s)", pause: "Pausa (s)",
     sets: "Series", save: "Guardar", create: "Crear", delete_confirm: "¿Eliminar?",
+    edit: "Editar", copy: "Copiar",
     no_modules: "Sin módulos.", no_workouts: "Sin entrenamientos.",
     import_ok: "Importación exitosa", import_err: "Error de importación",
     pick_type: "Elegir tipo", cancel: "Cancelar", name_req: "Introduce un nombre",
@@ -677,7 +681,8 @@ function viewHome() {
         <div class="card-info">${c.sets}&times; ${c.exerciseDuration}s / ${c.pauseDuration}s</div>
         <div class="card-actions">
           <button class="btn-sm ctrl-start" style="color:#fff" data-id="${m.id}" data-a="run">&#9654; ${t('start')}</button>
-          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-timer">${t('save')}</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-timer">${t('edit')}</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="copy">${t('copy')}</button>
           <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">X</button>
         </div></div>`;
     });
@@ -694,7 +699,8 @@ function viewHome() {
         ${c.imageBase64 ? `<img class="img-preview" src="${c.imageBase64}" alt="">` : ''}
         ${c.description ? `<div class="card-info">${esc(c.description).slice(0,80)}...</div>` : ''}
         <div class="card-actions">
-          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-ex">${t('save')}</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-ex">${t('edit')}</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="copy">${t('copy')}</button>
           <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">X</button>
         </div></div>`;
     });
@@ -708,6 +714,14 @@ function bindHome() {
     if (a === 'run') { const m = S.modules.find(x => x.id === id); go('timerRun', { mod: m }); }
     else if (a === 'edit-timer') go('timerForm',   { id });
     else if (a === 'edit-ex')    go('exerciseForm', { id });
+    else if (a === 'copy') {
+      const m = S.modules.find(x => x.id === id);
+      const newM = JSON.parse(JSON.stringify(m));
+      newM.id = uid();
+      newM.name += ` (${t('copy')})`;
+      S.modules.push(newM);
+      saveS(); go('home');
+    }
     else if (a === 'del') {
       if (!confirm(t('delete_confirm'))) return;
       S.modules = S.modules.filter(x => x.id !== id);
@@ -812,14 +826,18 @@ function bindExForm({ id } = {}) {
 }
 
 // ── VIEW: WORKOUT CREATE ─────────────────────────────────────────
-function viewWorkoutCreate() {
+function viewWorkoutCreate({ id } = {}) {
+  const w = id ? S.workouts.find(x => x.id === id) : null;
   if (!S.modules.length) return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
     <div class="empty-state"><div class="empty-icon">&#128203;</div>
     <p>${t('no_modules')}</p></div>`;
-  const opts = S.modules.map(m =>
-    `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  
   let slots = '';
   for (let i = 1; i <= 4; i++) {
+    const ex = w?.exercises[i-1];
+    const opts = S.modules.map(m =>
+      `<option value="${m.id}" ${ex?.moduleId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+    
     slots += `<div class="slot-card"><div class="slot-header"># ${i}</div>
       <div class="form-group"><label class="form-label">Modul</label>
         <select class="form-select" id="s-mod-${i}">
@@ -827,22 +845,22 @@ function viewWorkoutCreate() {
         </select></div>
       <div class="slot-row">
         <div class="form-group"><label class="form-label">${t('sets')}</label>
-          <input class="form-input" id="s-sets-${i}" type="number" min="1" value="3"></div>
+          <input class="form-input" id="s-sets-${i}" type="number" min="1" value="${ex ? ex.sets.length : 3}"></div>
         <div class="form-group"><label class="form-label">${t('intensity')}</label>
-          <input class="form-input" id="s-int-${i}" type="text" value=""></div>
+          <input class="form-input" id="s-int-${i}" type="text" value="${ex ? esc(ex.intensity) : ''}"></div>
       </div>
       <div class="form-group"><label class="form-label">${t('physio_note')}</label>
-        <input class="form-input" id="s-note-${i}" type="text"></div>
+        <input class="form-input" id="s-note-${i}" type="text" value="${ex ? esc(ex.note) : ''}"></div>
     </div>`;
   }
   return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
     <div class="form-group"><label class="form-label">${t('workout_name')}</label>
-      <input class="form-input" id="w-name" type="text"></div>
+      <input class="form-input" id="w-name" type="text" value="${w ? esc(w.name) : ''}"></div>
     ${slots}
-    <button class="btn-primary" id="save-w">${t('save')}</button>`;
+    <button class="btn-primary" id="save-w">${w ? t('save') : t('create')}</button>`;
 }
-function bindWorkoutCreate() {
-  document.getElementById('back')?.addEventListener('click', () => go('home'));
+function bindWorkoutCreate({ id } = {}) {
+  document.getElementById('back')?.addEventListener('click', () => go(id ? 'workoutList' : 'home'));
   document.getElementById('save-w')?.addEventListener('click', () => {
     const name = document.getElementById('w-name')?.value.trim();
     if (!name) { toast(t('name_req')); return; }
@@ -851,8 +869,20 @@ function bindWorkoutCreate() {
       const moduleId = document.getElementById(`s-mod-${i}`)?.value;
       if (moduleId) {
         const setCnt = parseInt(document.getElementById(`s-sets-${i}`).value) || 1;
+        
+        // Preserve "done" status if editing
+        let oldEx = null;
+        if (id) {
+            const w = S.workouts.find(x => x.id === id);
+            oldEx = w?.exercises[i-1];
+        }
+
         const sets = [];
-        for(let s=1; s<=setCnt; s++) sets.push({ index:s, done:false });
+        for(let s=1; s<=setCnt; s++) {
+            const wasDone = oldEx && oldEx.moduleId === moduleId && oldEx.sets[s-1]?.done;
+            sets.push({ index:s, done: !!wasDone });
+        }
+
         exercises.push({
           moduleId,
           intensity: document.getElementById(`s-int-${i}`)?.value.trim() || '',
@@ -862,7 +892,14 @@ function bindWorkoutCreate() {
       }
     }
     if (!exercises.length) { toast(t('no_modules')); return; }
-    S.workouts.push({ id: uid(), name, exercises });
+    
+    if (id) {
+      const w = S.workouts.find(x => x.id === id);
+      if (w) { w.name = name; w.exercises = exercises; }
+    } else {
+      S.workouts.push({ id: uid(), name, exercises });
+    }
+    
     saveS(); go('workoutList');
   });
 }
@@ -891,6 +928,8 @@ function viewWorkoutList() {
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
       <div class="workout-actions">
         <button class="btn-load" data-id="${w.id}" data-a="run">&#9654;</button>
+        <button class="btn-sm btn-edit" style="min-height:44px" data-id="${w.id}" data-a="edit-w">${t('edit')}</button>
+        <button class="btn-sm btn-edit" style="min-height:44px" data-id="${w.id}" data-a="copy-w">${t('copy')}</button>
         <button class="btn-sm btn-edit" style="min-height:44px; flex:1" data-id="${w.id}" data-a="plan-toggle">
           ${inPlan ? t('remove_from_plan') : t('add_to_plan')}
         </button>
@@ -905,6 +944,15 @@ function bindWorkoutList() {
     const id = b.dataset.id, a = b.dataset.a;
     if (a === 'run') {
       const w = S.workouts.find(x => x.id === id); go('workoutRun', { workout: w });
+    } else if (a === 'edit-w') {
+      go('workoutCreate', { id });
+    } else if (a === 'copy-w') {
+      const w = S.workouts.find(x => x.id === id);
+      const newW = JSON.parse(JSON.stringify(w));
+      newW.id = uid();
+      newW.name += ` (${t('copy')})`;
+      S.workouts.push(newW);
+      saveS(); go('workoutList');
     } else if (a === 'plan-toggle') {
       const idx = S.plan.indexOf(id);
       if (idx === -1) S.plan.push(id);
