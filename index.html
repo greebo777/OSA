@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OSA Sport</title>
+  <title>OSA Online Sport App</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <meta name="theme-color" content="#4CAF50">
@@ -265,7 +265,7 @@
 <body data-theme="light">
 
 <nav class="nav">
-  <span class="nav-title" id="nav-title">OSA Sport</span>
+  <span class="nav-title" id="nav-title">OSA Online Sport App</span>
   <button class="nav-btn" id="menu-btn">&#9776;</button>
 </nav>
 
@@ -325,8 +325,8 @@ async function shareApp() {
     try {
       await navigator.share({
         files: [file],
-        title: 'OSA Sport Training Export',
-        text: 'Hier ist mein aktueller Trainingsstand von OSA Sport.'
+        title: 'OSA Online Sport App Export',
+        text: 'Hier ist mein aktueller Trainingsstand von OSA Online Sport App.'
       });
       toast('Erfolgreich geteilt');
     } catch (e) { if (e.name !== 'AbortError') dlJSON(); }
@@ -477,7 +477,7 @@ function viewStart() {
   return `
     <div class="hero">
       <div class="hero-title">Willkommen bei OSA</div>
-      <div class="hero-sub">Dein persönlicher Begleiter für Physio & Sport</div>
+      <div class="hero-sub">Dein persönlicher Begleiter für Sport</div>
       ${nextWorkout ? `
         <div class="plan-status">
           <span>&#128197; Nächstes Workout: <strong>${esc(nextWorkout.name)}</strong></span>
@@ -515,7 +515,7 @@ function viewStart() {
     </div>
     
     <div style="margin-top: 30px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
-      Physio-Training: Bleib dran, jeder Satz zählt!
+      Training: Jede Übung bringt dich voran!
     </div>
   `;
 }
