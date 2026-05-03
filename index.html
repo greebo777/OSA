@@ -271,22 +271,31 @@
 
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="drawer">
-  <div class="drawer-header">Menü</div>
-  <button class="drawer-item" id="m-upload">&#128228;&nbsp; Upload JSON</button>
-  <button class="drawer-item" id="m-download">&#128229;&nbsp; Download JSON</button>
-  <button class="drawer-item" id="m-add-workout">&#43;&nbsp; Workout erstellen</button>
-  <button class="drawer-item" id="m-workouts">&#128203;&nbsp; Workouts</button>
-  <button class="drawer-item" id="m-plan">&#128197;&nbsp; Plan / Queue</button>
-  <button class="drawer-item" id="m-privacy">&#128712;&nbsp; Datenschutz</button>
-  <button class="drawer-item" id="m-home">&#127968;&nbsp; Module</button>
+  <div class="drawer-header" data-t="menu">Menü</div>
+  <button class="drawer-item" id="m-upload">&#128228;&nbsp; <span data-t="upload">Upload JSON</span></button>
+  <button class="drawer-item" id="m-download">&#128229;&nbsp; <span data-t="download">Download JSON</span></button>
+  <button class="drawer-item" id="m-add-workout">&#43;&nbsp; <span data-t="create_workout">Workout erstellen</span></button>
+  <button class="drawer-item" id="m-workouts">&#128203;&nbsp; <span data-t="workouts">Workouts</span></button>
+  <button class="drawer-item" id="m-plan">&#128197;&nbsp; <span data-t="plan">Plan / Queue</span></button>
+  <button class="drawer-item" id="m-privacy">&#128712;&nbsp; <span data-t="privacy">Datenschutz</span></button>
+  <button class="drawer-item" id="m-home">&#127968;&nbsp; <span data-t="modules">Module</span></button>
   <div class="drawer-setting">
     <div class="drawer-setting-label">
-      <span>Dunkelmodus</span>
+      <span data-t="dark_mode">Dunkelmodus</span>
       <input type="checkbox" class="toggle" id="theme-toggle">
     </div>
   </div>
   <div class="drawer-setting">
-    <div class="drawer-setting-label"><span>Lautstärke</span></div>
+    <div class="drawer-setting-label"><span data-t="language">Sprache</span></div>
+    <select class="form-select" id="lang-select" style="min-height:36px; padding:4px 8px; font-size:0.85rem">
+      <option value="de">Deutsch</option>
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
+  <div class="drawer-setting">
+    <div class="drawer-setting-label"><span data-t="volume">Lautstärke</span></div>
     <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5">
   </div>
 </aside>
@@ -296,6 +305,118 @@
 <main class="main" id="main"></main>
 
 <script>
+// ── I18N ────────────────────────────────────────────────────────
+const I18N = {
+  de: {
+    menu: "Menü", upload: "Upload JSON", download: "Download / Share", create_workout: "Workout erstellen",
+    workouts: "Workouts", plan: "Plan / Queue", privacy: "Datenschutz", modules: "Module",
+    dark_mode: "Dunkelmodus", volume: "Lautstärke", language: "Sprache",
+    welcome: "Willkommen bei OSA", sub_welcome: "Dein persönlicher Begleiter für Sport",
+    next_workout: "Nächstes Workout", start_desc: "Training: Jede Übung bringt dich voran!",
+    quick_plan_title: "Mein Plan", quick_plan_desc: "Nächstes geplantes Training",
+    quick_workouts_title: "Alle Workouts", quick_workouts_desc: "Wähle aus deiner Liste",
+    quick_modules_title: "Module", quick_modules_desc: "Timer und Übungen verwalten",
+    timer_mods: "Timer-Module", exercise_mods: "Übungs-Module", back: "Zurück",
+    exercise_name: "Name der Übung", duration: "Übungszeit (s)", pause: "Pausenzeit (s)",
+    sets: "Sätze", save: "Speichern", create: "Erstellen", delete_confirm: "Löschen?",
+    no_modules: "Noch keine Module.", no_workouts: "Noch keine Workouts.",
+    import_ok: "Import erfolgreich", import_err: "Fehler beim Import",
+    pick_type: "Modul-Typ wählen", cancel: "Abbrechen", name_req: "Bitte Name eingeben",
+    image: "Bild (optional)", pick_image: "Bild wählen", description: "Beschreibung (optional)",
+    workout_name: "Workout-Name", intensity: "Intensität", physio_note: "Physio-Notiz (optional)",
+    add_to_plan: "Zu Plan hinzufügen", remove_from_plan: "Vom Plan entfernen",
+    reset_confirm: "Fortschritt zurückgesetzt", finish_workout: "Workout abschließen",
+    plan_empty: "Dein Plan ist leer.", plan_desc: "Das oberste Workout ist als Nächstes dran. Nach Abschluss wandert es ans Ende.",
+    exit_confirm: "Möchtest du die App wirklich verlassen?", share_title: "OSA Online Sport App Export",
+    share_text: "Hier ist mein aktueller Trainingsstand.",
+    privacy_title: "Datenschutz & Technologie", privacy_text: "Diese App ist 100% lokal und privat.",
+    active: "aktiv", done: "erledigt", soon: "bald", start: "Start",
+  },
+  en: {
+    menu: "Menu", upload: "Upload JSON", download: "Download / Share", create_workout: "Create Workout",
+    workouts: "Workouts", plan: "Plan / Queue", privacy: "Privacy", modules: "Modules",
+    dark_mode: "Dark Mode", volume: "Volume", language: "Language",
+    welcome: "Welcome to OSA", sub_welcome: "Your personal sports companion",
+    next_workout: "Next Workout", start_desc: "Training: Every exercise moves you forward!",
+    quick_plan_title: "My Plan", quick_plan_desc: "Start your next scheduled training",
+    quick_workouts_title: "All Workouts", quick_workouts_desc: "Choose from your list",
+    quick_modules_title: "Modules", quick_modules_desc: "Manage timers and exercises",
+    timer_mods: "Timer Modules", exercise_mods: "Exercise Modules", back: "Back",
+    exercise_name: "Exercise Name", duration: "Duration (s)", pause: "Pause (s)",
+    sets: "Sets", save: "Save", create: "Create", delete_confirm: "Delete?",
+    no_modules: "No modules yet.", no_workouts: "No workouts yet.",
+    import_ok: "Import successful", import_err: "Import error",
+    pick_type: "Pick module type", cancel: "Cancel", name_req: "Please enter a name",
+    image: "Image (optional)", pick_image: "Pick image", description: "Description (optional)",
+    workout_name: "Workout Name", intensity: "Intensity", physio_note: "Physio Note (optional)",
+    add_to_plan: "Add to plan", remove_from_plan: "Remove from plan",
+    reset_confirm: "Progress reset", finish_workout: "Finish Workout",
+    plan_empty: "Your plan is empty.", plan_desc: "The top workout is up next. It moves to the end once finished.",
+    exit_confirm: "Do you really want to exit?", share_title: "OSA Online Sport App Export",
+    share_text: "Here is my current training data.",
+    privacy_title: "Privacy & Technology", privacy_text: "This app is 100% local and private.",
+    active: "active", done: "done", soon: "soon", start: "Start",
+  },
+  fr: {
+    menu: "Menu", upload: "Charger JSON", download: "Télécharger / Partager", create_workout: "Créer un entraînement",
+    workouts: "Entraînements", plan: "Plan / File", privacy: "Confidentialité", modules: "Modules",
+    dark_mode: "Mode sombre", volume: "Volume", language: "Langue",
+    welcome: "Bienvenue sur OSA", sub_welcome: "Votre compagnon sportif personnel",
+    next_workout: "Prochain entraînement", start_desc: "Entraînement : Chaque exercice vous fait avancer !",
+    quick_plan_title: "Mon Plan", quick_plan_desc: "Commencez votre prochain entraînement",
+    quick_workouts_title: "Tous les entraînements", quick_workouts_desc: "Choisissez dans votre liste",
+    quick_modules_title: "Modules", quick_modules_desc: "Gérer les timers et exercices",
+    timer_mods: "Modules Timer", exercise_mods: "Modules Exercice", back: "Retour",
+    exercise_name: "Nom de l'exercice", duration: "Durée (s)", pause: "Pause (s)",
+    sets: "Séries", save: "Sauvegarder", create: "Créer", delete_confirm: "Supprimer ?",
+    no_modules: "Aucun module.", no_workouts: "Aucun entraînement.",
+    import_ok: "Importation réussie", import_err: "Erreur d'importation",
+    pick_type: "Choisir le type", cancel: "Annuler", name_req: "Veuillez entrer un nom",
+    image: "Image (optionnel)", pick_image: "Choisir une image", description: "Description (optionnel)",
+    workout_name: "Nom de l'entraînement", intensity: "Intensité", physio_note: "Note physio (optionnel)",
+    add_to_plan: "Ajouter au plan", remove_from_plan: "Retirer du plan",
+    reset_confirm: "Progression réinitialisée", finish_workout: "Terminer l'entraînement",
+    plan_empty: "Votre plan est vide.", plan_desc: "L'entraînement du haut est le suivant. Il va à la fin une fois terminé.",
+    exit_confirm: "Voulez-vous vraiment quitter ?", share_title: "Export OSA Online Sport App",
+    share_text: "Voici mes données d'entraînement actuelles.",
+    privacy_title: "Confidentialité & Technologie", privacy_text: "Cette application ist 100% locale et privée.",
+    active: "actif", done: "terminé", soon: "bientôt", start: "Départ",
+  },
+  es: {
+    menu: "Menú", upload: "Cargar JSON", download: "Descargar / Compartir", create_workout: "Crear entrenamiento",
+    workouts: "Entrenamientos", plan: "Plan / Cola", privacy: "Privacidad", modules: "Módulos",
+    dark_mode: "Modo oscuro", volume: "Volumen", language: "Idioma",
+    welcome: "Bienvenido a OSA", sub_welcome: "Tu compañero deportivo personal",
+    next_workout: "Siguiente entrenamiento", start_desc: "Entrenamiento: ¡Cada ejercicio te hace avanzar!",
+    quick_plan_title: "Mi Plan", quick_plan_desc: "Empieza tu próximo entrenamiento",
+    quick_workouts_title: "Entrenamientos", quick_workouts_desc: "Elige de tu lista",
+    quick_modules_title: "Módulos", quick_modules_desc: "Gestionar timers y ejercicios",
+    timer_mods: "Módulos Timer", exercise_mods: "Módulos Ejercicio", back: "Atrás",
+    exercise_name: "Nombre del ejercicio", duration: "Duración (s)", pause: "Pausa (s)",
+    sets: "Series", save: "Guardar", create: "Crear", delete_confirm: "¿Eliminar?",
+    no_modules: "Sin módulos.", no_workouts: "Sin entrenamientos.",
+    import_ok: "Importación exitosa", import_err: "Error de importación",
+    pick_type: "Elegir tipo", cancel: "Cancelar", name_req: "Introduce un nombre",
+    image: "Imagen (opcional)", pick_image: "Elegir imagen", description: "Descripción (opcional)",
+    workout_name: "Nombre del entrenamiento", intensity: "Intensidad", physio_note: "Nota fisio (opcional)",
+    add_to_plan: "Añadir al plan", remove_from_plan: "Quitar del plan",
+    reset_confirm: "Progreso reiniciado", finish_workout: "Finalizar entrenamiento",
+    plan_empty: "Tu plan está vacío.", plan_desc: "El primer entrenamiento es el siguiente. Pasa al final al terminar.",
+    exit_confirm: "¿Realmente quieres salir?", share_title: "Exportación OSA Online Sport App",
+    share_text: "Aquí están mis datos de entrenamiento actuales.",
+    privacy_title: "Privacidad y Tecnología", privacy_text: "Esta aplicación es 100% local y privada.",
+    active: "activo", done: "hecho", soon: "pronto", start: "Inicio",
+  }
+};
+function t(key) { return I18N[S?.lang || 'en'][key] || I18N['en'][key] || key; }
+function updateStaticUI() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const key = el.dataset.t;
+    if (el.tagName === 'INPUT' && el.type === 'placeholder') el.placeholder = t(key);
+    else el.textContent = t(key);
+  });
+}
+
 // ── SOUNDS ──────────────────────────────────────────────────────
 const SND = {
   start:  new Audio('start-sound.mp3'),
@@ -311,9 +432,14 @@ function loadS() {
   try { S = JSON.parse(localStorage.getItem(SK)) || {}; } catch { S = {}; }
   S.modules  = S.modules  || [];
   S.workouts = S.workouts || [];
-  S.plan     = S.plan     || []; // Array of workout IDs
+  S.plan     = S.plan     || [];
   S.theme    = S.theme    || 'light';
   S.volume   = S.volume   !== undefined ? S.volume : 0.5;
+  
+  if (!S.lang) {
+    const navLang = navigator.language.split('-')[0];
+    S.lang = ['de','en','fr','es'].includes(navLang) ? navLang : 'en';
+  }
   return S;
 }
 function saveS() { localStorage.setItem(SK, JSON.stringify(S)); }
@@ -325,10 +451,10 @@ async function shareApp() {
     try {
       await navigator.share({
         files: [file],
-        title: 'OSA Online Sport App Export',
-        text: 'Hier ist mein aktueller Trainingsstand von OSA Online Sport App.'
+        title: t('share_title'),
+        text: t('share_text')
       });
-      toast('Erfolgreich geteilt');
+      toast(t('import_ok'));
     } catch (e) { if (e.name !== 'AbortError') dlJSON(); }
   } else {
     dlJSON();
@@ -376,29 +502,24 @@ function go(view, params = {}) {
   el.innerHTML = render(params);
   bind(params);
   
-  // Push state for back-button handling (prevent app close)
   if (history.state?.view !== view) {
     history.pushState({ view, params }, '', '');
   }
 }
 
-// Handle Back-Button
 window.addEventListener('popstate', (e) => {
   if (e.state && e.state.view) {
-    // If we have a state, just go there
     go(e.state.view, e.state.params);
   } else {
-    // If no state (trying to exit), ask or stay
-    if (confirm('Möchtest du die App wirklich verlassen? Dein Fortschritt könnte verloren gehen.')) {
+    if (confirm(t('exit_confirm'))) {
       history.back();
     } else {
-      history.pushState({ view: 'home' }, '', '');
-      go('home');
+      history.pushState({ view: 'start' }, '', '');
+      go('start');
     }
   }
 });
 
-// Prevent accidental reload/close during active session
 window.addEventListener('beforeunload', (e) => {
   if (activeTimer?.running) {
     e.preventDefault();
@@ -413,7 +534,7 @@ function openDrawer()  { drawerEl.classList.add('open');  overlayEl.classList.ad
 function closeDrawer() { drawerEl.classList.remove('open'); overlayEl.classList.remove('open'); }
 document.getElementById('menu-btn').addEventListener('click', openDrawer);
 overlayEl.addEventListener('click', closeDrawer);
-document.getElementById('nav-title').addEventListener('click', () => go('home'));
+document.getElementById('nav-title').addEventListener('click', () => go('start'));
 
 function drawerGo(view) { closeDrawer(); go(view); }
 document.getElementById('m-home').addEventListener('click',       () => drawerGo('home'));
@@ -424,7 +545,6 @@ document.getElementById('m-privacy').addEventListener('click',    () => drawerGo
 document.getElementById('m-download').addEventListener('click',   () => { closeDrawer(); shareApp(); });
 document.getElementById('m-upload').addEventListener('click',     () => { closeDrawer(); document.getElementById('file-input').click(); });
 
-// Theme
 const themeToggle = document.getElementById('theme-toggle');
 themeToggle.addEventListener('change', () => {
   const theme = themeToggle.checked ? 'dark' : 'light';
@@ -432,7 +552,15 @@ themeToggle.addEventListener('change', () => {
   S.theme = theme; saveS();
 });
 
-// Volume
+const langSelect = document.getElementById('lang-select');
+langSelect.addEventListener('change', () => {
+  S.lang = langSelect.value;
+  saveS();
+  document.documentElement.lang = S.lang;
+  updateStaticUI();
+  go(history.state?.view || 'start', history.state?.params);
+});
+
 const volSlider = document.getElementById('vol-slider');
 volSlider.addEventListener('input', () => {
   setVol(volSlider.value);
@@ -440,7 +568,6 @@ volSlider.addEventListener('input', () => {
   saveS();
 });
 
-// Upload
 document.getElementById('file-input').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
@@ -449,8 +576,8 @@ document.getElementById('file-input').addEventListener('change', e => {
       const d = JSON.parse(ev.target.result);
       if (d.modules)  S.modules.push(...d.modules);
       if (d.workouts) S.workouts.push(...d.workouts);
-      saveS(); go('home'); toast('Import erfolgreich');
-    } catch { toast('Fehler beim Import'); }
+      saveS(); go('home'); toast(t('import_ok'));
+    } catch { toast(t('import_err')); }
   };
   r.readAsText(f); e.target.value = '';
 });
@@ -459,10 +586,9 @@ function dlJSON() {
   const b = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(b); a.download = 'osa-backup.json'; a.click();
-  URL.revokeObjectURL(a.href); toast('Download gestartet');
+  URL.revokeObjectURL(a.href); toast(t('import_ok'));
 }
 
-// ── ESCAPE ──────────────────────────────────────────────────────
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -476,11 +602,11 @@ function viewStart() {
   
   return `
     <div class="hero">
-      <div class="hero-title">Willkommen bei OSA</div>
-      <div class="hero-sub">Dein persönlicher Begleiter für Sport</div>
+      <div class="hero-title">${t('welcome')}</div>
+      <div class="hero-sub">${t('sub_welcome')}</div>
       ${nextWorkout ? `
         <div class="plan-status">
-          <span>&#128197; Nächstes Workout: <strong>${esc(nextWorkout.name)}</strong></span>
+          <span>&#128197; ${t('next_workout')}: <strong>${esc(nextWorkout.name)}</strong></span>
         </div>
       ` : ''}
     </div>
@@ -489,8 +615,8 @@ function viewStart() {
       <div class="quick-card" data-go="plan">
         <div class="quick-icon">&#128197;</div>
         <div class="quick-text">
-          <div class="quick-title">Mein Plan</div>
-          <div class="quick-desc">Starte dein nächstes geplantes Training</div>
+          <div class="quick-title">${t('quick_plan_title')}</div>
+          <div class="quick-desc">${t('quick_plan_desc')}</div>
         </div>
         <div style="color:var(--accent)">&#10140;</div>
       </div>
@@ -498,8 +624,8 @@ function viewStart() {
       <div class="quick-card" data-go="workoutList">
         <div class="quick-icon">&#128203;</div>
         <div class="quick-text">
-          <div class="quick-title">Alle Workouts</div>
-          <div class="quick-desc">Wähle aus deiner Liste von Workouts</div>
+          <div class="quick-title">${t('quick_workouts_title')}</div>
+          <div class="quick-desc">${t('quick_workouts_desc')}</div>
         </div>
         <div style="color:var(--accent)">&#10140;</div>
       </div>
@@ -507,15 +633,15 @@ function viewStart() {
       <div class="quick-card" data-go="home">
         <div class="quick-icon">&#127968;</div>
         <div class="quick-text">
-          <div class="quick-title">Module</div>
-          <div class="quick-desc">Timer und Übungen verwalten</div>
+          <div class="quick-title">${t('quick_modules_title')}</div>
+          <div class="quick-desc">${t('quick_modules_desc')}</div>
         </div>
         <div style="color:var(--accent)">&#10140;</div>
       </div>
     </div>
     
     <div style="margin-top: 30px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
-      Training: Jede Übung bringt dich voran!
+      ${t('start_desc')}
     </div>
   `;
 }
@@ -529,18 +655,18 @@ function bindStart() {
 function viewHome() {
   const mods = S.modules;
   let h = `<div class="view-header">
-    <span class="view-title">Module</span>
-    <button class="btn-fab" id="add-mod-btn" title="Modul hinzufügen">+</button>
+    <span class="view-title">${t('modules')}</span>
+    <button class="btn-fab" id="add-mod-btn" title="${t('create')}">+</button>
   </div>`;
   if (!mods.length) {
     h += `<div class="empty-state"><div class="empty-icon">&#127939;</div>
-      <p>Noch keine Module.<br>Tippe auf + um zu beginnen.</p></div>`;
+      <p>${t('no_modules')}</p></div>`;
     return h;
   }
   const timers = mods.filter(m => m.type === 'timer');
   const exs    = mods.filter(m => m.type === 'exercise');
   if (timers.length) {
-    h += `<div class="section-label">Timer-Module</div>`;
+    h += `<div class="section-label">${t('timer_mods')}</div>`;
     timers.forEach(m => {
       const c = m.config;
       h += `<div class="card">
@@ -548,28 +674,28 @@ function viewHome() {
           <span class="card-title">${esc(m.name)}</span>
           <span class="badge badge-timer">Timer</span>
         </div>
-        <div class="card-info">${c.sets}&times; ${c.exerciseDuration}s Übung / ${c.pauseDuration}s Pause</div>
+        <div class="card-info">${c.sets}&times; ${c.exerciseDuration}s / ${c.pauseDuration}s</div>
         <div class="card-actions">
-          <button class="btn-sm ctrl-start" style="color:#fff" data-id="${m.id}" data-a="run">&#9654; Start</button>
-          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-timer">Bearbeiten</button>
-          <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">Löschen</button>
+          <button class="btn-sm ctrl-start" style="color:#fff" data-id="${m.id}" data-a="run">&#9654; ${t('start')}</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-timer">${t('save')}</button>
+          <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">X</button>
         </div></div>`;
     });
   }
   if (exs.length) {
-    h += `<div class="section-label">Übungs-Module</div>`;
+    h += `<div class="section-label">${t('exercise_mods')}</div>`;
     exs.forEach(m => {
       const c = m.config;
       h += `<div class="card">
         <div class="card-header">
           <span class="card-title">${esc(m.name)}</span>
-          <span class="badge badge-ex">Übung</span>
+          <span class="badge badge-ex">Modul</span>
         </div>
         ${c.imageBase64 ? `<img class="img-preview" src="${c.imageBase64}" alt="">` : ''}
-        ${c.description ? `<div class="card-info">${esc(c.description).slice(0,80)}${c.description.length>80?'…':''}</div>` : ''}
+        ${c.description ? `<div class="card-info">${esc(c.description).slice(0,80)}...</div>` : ''}
         <div class="card-actions">
-          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-ex">Bearbeiten</button>
-          <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">Löschen</button>
+          <button class="btn-sm btn-edit" data-id="${m.id}" data-a="edit-ex">${t('save')}</button>
+          <button class="btn-sm btn-del"  data-id="${m.id}" data-a="del">X</button>
         </div></div>`;
     });
   }
@@ -583,9 +709,9 @@ function bindHome() {
     else if (a === 'edit-timer') go('timerForm',   { id });
     else if (a === 'edit-ex')    go('exerciseForm', { id });
     else if (a === 'del') {
-      if (!confirm('Modul löschen?')) return;
+      if (!confirm(t('delete_confirm'))) return;
       S.modules = S.modules.filter(x => x.id !== id);
-      saveS(); go('home'); toast('Gelöscht');
+      saveS(); go('home');
     }
   }));
 }
@@ -593,12 +719,12 @@ function showTypePicker() {
   const bd = document.createElement('div');
   bd.className = 'sheet-backdrop';
   bd.innerHTML = `<div class="sheet">
-    <div class="sheet-title">Modul-Typ wählen</div>
+    <div class="sheet-title">${t('pick_type')}</div>
     <div class="type-grid">
       <div class="type-card" id="pick-timer"><div class="type-icon">&#9201;</div><div class="type-label">Timer</div></div>
-      <div class="type-card" id="pick-ex"><div class="type-icon">&#127939;</div><div class="type-label">Übung</div></div>
+      <div class="type-card" id="pick-ex"><div class="type-icon">&#127939;</div><div class="type-label">Modul</div></div>
     </div>
-    <button class="btn-secondary" id="pick-cancel">Abbrechen</button>
+    <button class="btn-secondary" id="pick-cancel">${t('cancel')}</button>
   </div>`;
   document.body.appendChild(bd);
   bd.querySelector('#pick-timer').addEventListener('click', () => { document.body.removeChild(bd); go('timerForm', {}); });
@@ -611,26 +737,26 @@ function showTypePicker() {
 function viewTimerForm({ id } = {}) {
   const m = id ? S.modules.find(x => x.id === id) : null;
   const c = m?.config || { exerciseDuration: 45, pauseDuration: 30, sets: 3 };
-  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
   <div class="form-card">
-    <div class="form-group"><label class="form-label">Name der Übung</label>
-      <input class="form-input" id="f-name" type="text" placeholder="z.B. Wall-sit" value="${esc(m?.name||'')}"></div>
+    <div class="form-group"><label class="form-label">${t('exercise_name')}</label>
+      <input class="form-input" id="f-name" type="text" value="${esc(m?.name||'')}"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Übungszeit (s)</label>
+      <div class="form-group"><label class="form-label">${t('duration')}</label>
         <input class="form-input" id="f-ex" type="number" min="1" value="${c.exerciseDuration}"></div>
-      <div class="form-group"><label class="form-label">Pausenzeit (s)</label>
+      <div class="form-group"><label class="form-label">${t('pause')}</label>
         <input class="form-input" id="f-pa" type="number" min="0" value="${c.pauseDuration}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Sätze</label>
+    <div class="form-group"><label class="form-label">${t('sets')}</label>
       <input class="form-input" id="f-sets" type="number" min="1" value="${c.sets}"></div>
-    <button class="btn-primary" id="save-btn">${m ? 'Speichern' : 'Erstellen'}</button>
+    <button class="btn-primary" id="save-btn">${m ? t('save') : t('create')}</button>
   </div>`;
 }
 function bindTimerForm({ id } = {}) {
   document.getElementById('back').addEventListener('click', () => go('home'));
   document.getElementById('save-btn').addEventListener('click', () => {
     const name = document.getElementById('f-name').value.trim();
-    if (!name) { toast('Bitte Name eingeben'); return; }
+    if (!name) { toast(t('name_req')); return; }
     const cfg = {
       exerciseDuration: parseInt(document.getElementById('f-ex').value)   || 45,
       pauseDuration:    parseInt(document.getElementById('f-pa').value)   || 0,
@@ -638,7 +764,7 @@ function bindTimerForm({ id } = {}) {
     };
     if (id) { const m = S.modules.find(x => x.id === id); m.name = name; m.config = cfg; }
     else S.modules.push({ id: uid(), type: 'timer', name, config: cfg });
-    saveS(); go('home'); toast(id ? 'Aktualisiert' : 'Timer erstellt');
+    saveS(); go('home');
   });
 }
 
@@ -646,18 +772,18 @@ function bindTimerForm({ id } = {}) {
 function viewExForm({ id } = {}) {
   const m = id ? S.modules.find(x => x.id === id) : null;
   const c = m?.config || { imageBase64: '', description: '' };
-  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
   <div class="form-card">
-    <div class="form-group"><label class="form-label">Name</label>
-      <input class="form-input" id="f-name" type="text" placeholder="z.B. Liegestütz" value="${esc(m?.name||'')}"></div>
-    <div class="form-group"><label class="form-label">Bild (optional)</label>
+    <div class="form-group"><label class="form-label">${t('exercise_name')}</label>
+      <input class="form-input" id="f-name" type="text" value="${esc(m?.name||'')}"></div>
+    <div class="form-group"><label class="form-label">${t('image')}</label>
       <input type="file" id="f-img-file" accept="image/*" style="display:none">
-      <button class="btn-secondary" id="pick-img" style="margin-top:0">&#128247; Bild wählen</button>
+      <button class="btn-secondary" id="pick-img" style="margin-top:0">${t('pick_image')}</button>
       <div id="img-preview">${c.imageBase64 ? `<img class="img-preview" src="${c.imageBase64}">` : ''}</div>
     </div>
-    <div class="form-group"><label class="form-label">Beschreibung (optional)</label>
+    <div class="form-group"><label class="form-label">${t('description')}</label>
       <textarea class="form-textarea" id="f-desc">${esc(c.description||'')}</textarea></div>
-    <button class="btn-primary" id="save-btn">${m ? 'Speichern' : 'Erstellen'}</button>
+    <button class="btn-primary" id="save-btn">${m ? t('save') : t('create')}</button>
   </div>`;
 }
 function bindExForm({ id } = {}) {
@@ -677,49 +803,49 @@ function bindExForm({ id } = {}) {
   });
   document.getElementById('save-btn').addEventListener('click', () => {
     const name = document.getElementById('f-name').value.trim();
-    if (!name) { toast('Bitte Name eingeben'); return; }
+    if (!name) { toast(t('name_req')); return; }
     const description = document.getElementById('f-desc').value.trim();
     if (id) { const m2 = S.modules.find(x => x.id === id); m2.name = name; m2.config = { imageBase64: imgData, description }; }
     else S.modules.push({ id: uid(), type: 'exercise', name, config: { imageBase64: imgData, description } });
-    saveS(); go('home'); toast(id ? 'Aktualisiert' : 'Übung erstellt');
+    saveS(); go('home');
   });
 }
 
 // ── VIEW: WORKOUT CREATE ─────────────────────────────────────────
 function viewWorkoutCreate() {
-  if (!S.modules.length) return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  if (!S.modules.length) return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
     <div class="empty-state"><div class="empty-icon">&#128203;</div>
-    <p>Keine Module vorhanden.<br>Erstelle zuerst Module.</p></div>`;
+    <p>${t('no_modules')}</p></div>`;
   const opts = S.modules.map(m =>
-    `<option value="${m.id}">${esc(m.name)} (${m.type==='timer'?'Timer':'Übung'})</option>`).join('');
+    `<option value="${m.id}">${esc(m.name)}</option>`).join('');
   let slots = '';
   for (let i = 1; i <= 4; i++) {
-    slots += `<div class="slot-card"><div class="slot-header">Übung ${i}</div>
+    slots += `<div class="slot-card"><div class="slot-header"># ${i}</div>
       <div class="form-group"><label class="form-label">Modul</label>
         <select class="form-select" id="s-mod-${i}">
-          <option value="">-- Modul wählen --</option>${opts}
+          <option value="">--</option>${opts}
         </select></div>
       <div class="slot-row">
-        <div class="form-group"><label class="form-label">Sätze</label>
+        <div class="form-group"><label class="form-label">${t('sets')}</label>
           <input class="form-input" id="s-sets-${i}" type="number" min="1" value="3"></div>
-        <div class="form-group"><label class="form-label">Intensität</label>
-          <input class="form-input" id="s-int-${i}" type="text" placeholder="z.B. 60s" value=""></div>
+        <div class="form-group"><label class="form-label">${t('intensity')}</label>
+          <input class="form-input" id="s-int-${i}" type="text" value=""></div>
       </div>
-      <div class="form-group"><label class="form-label">Physio-Notiz (optional)</label>
-        <input class="form-input" id="s-note-${i}" type="text" placeholder="Becken stabil halten..."></div>
+      <div class="form-group"><label class="form-label">${t('physio_note')}</label>
+        <input class="form-input" id="s-note-${i}" type="text"></div>
     </div>`;
   }
-  return `<button class="btn-back" id="back">&#8592; Zurück</button>
-    <div class="form-group"><label class="form-label">Workout-Name</label>
-      <input class="form-input" id="w-name" type="text" placeholder="z.B. Physio Rücken"></div>
+  return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
+    <div class="form-group"><label class="form-label">${t('workout_name')}</label>
+      <input class="form-input" id="w-name" type="text"></div>
     ${slots}
-    <button class="btn-primary" id="save-w">Workout speichern</button>`;
+    <button class="btn-primary" id="save-w">${t('save')}</button>`;
 }
 function bindWorkoutCreate() {
   document.getElementById('back')?.addEventListener('click', () => go('home'));
   document.getElementById('save-w')?.addEventListener('click', () => {
     const name = document.getElementById('w-name')?.value.trim();
-    if (!name) { toast('Bitte Name eingeben'); return; }
+    if (!name) { toast(t('name_req')); return; }
     const exercises = [];
     for (let i = 1; i <= 4; i++) {
       const moduleId = document.getElementById(`s-mod-${i}`)?.value;
@@ -735,28 +861,24 @@ function bindWorkoutCreate() {
         });
       }
     }
-    if (!exercises.length) { toast('Bitte mindestens eine Übung wählen'); return; }
+    if (!exercises.length) { toast(t('no_modules')); return; }
     S.workouts.push({ id: uid(), name, exercises });
-    saveS(); go('workoutList'); toast('Workout gespeichert');
+    saveS(); go('workoutList');
   });
 }
 
 // ── VIEW: WORKOUT LIST ───────────────────────────────────────────
 function viewWorkoutList() {
   let h = `<div class="view-header">
-    <span class="view-title">Workouts</span>
-    <button class="btn-fab" id="new-w-btn" title="Neues Workout">+</button>
+    <span class="view-title">${t('workouts')}</span>
+    <button class="btn-fab" id="new-w-btn" title="${t('create')}">+</button>
   </div>`;
   if (!S.workouts.length) {
     h += `<div class="empty-state"><div class="empty-icon">&#128203;</div>
-      <p>Noch keine Workouts.<br>Tippe auf + um zu erstellen.</p></div>`;
+      <p>${t('no_workouts')}</p></div>`;
     return h;
   }
   S.workouts.forEach(w => {
-    const names = w.exercises.map(e => {
-      const m = S.modules.find(x => x.id === e.moduleId);
-      return (m ? esc(m.name) : '<i>gelöscht</i>') + (e.intensity ? ' &middot; ' + esc(e.intensity) : '');
-    });
     const total = w.exercises.reduce((s,e)=>s+e.sets.length,0);
     const done  = w.exercises.reduce((s,e)=>s+e.sets.filter(x=>x.done).length,0);
     const pct   = total ? Math.round(done/total*100) : 0;
@@ -764,19 +886,15 @@ function viewWorkoutList() {
     h += `<div class="card">
       <div class="card-header">
         <span class="card-title">${esc(w.name)}</span>
-        <span style="font-size:.8rem;color:var(--text-muted)">${done}/${total} Sätze</span>
+        <span style="font-size:.8rem;color:var(--text-muted)">${done}/${total}</span>
       </div>
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
-      <div style="font-size:.83rem;color:var(--text-muted);margin:6px 0">
-        ${names.map(n=>`&#9632; ${n}`).join('<br>')}
-      </div>
       <div class="workout-actions">
-        <button class="btn-load" data-id="${w.id}" data-a="run">&#9654; Laden</button>
+        <button class="btn-load" data-id="${w.id}" data-a="run">&#9654;</button>
         <button class="btn-sm btn-edit" style="min-height:44px; flex:1" data-id="${w.id}" data-a="plan-toggle">
-          ${inPlan ? 'Aus Plan entfernen' : 'Zu Plan hinzufügen'}
+          ${inPlan ? t('remove_from_plan') : t('add_to_plan')}
         </button>
-        <button class="btn-sm btn-edit" style="min-height:44px" data-id="${w.id}" data-a="reset">Reset</button>
-        <button class="btn-sm btn-del"  style="min-height:44px" data-id="${w.id}" data-a="del">Löschen</button>
+        <button class="btn-sm btn-del"  data-id="${w.id}" data-a="del">X</button>
       </div></div>`;
   });
   return h;
@@ -792,16 +910,11 @@ function bindWorkoutList() {
       if (idx === -1) S.plan.push(id);
       else S.plan.splice(idx, 1);
       saveS(); go('workoutList');
-      toast(idx === -1 ? 'Zum Plan hinzugefügt' : 'Vom Plan entfernt');
-    } else if (a === 'reset') {
-      const w = S.workouts.find(x => x.id === id);
-      w.exercises.forEach(e => e.sets.forEach(s => s.done = false));
-      saveS(); go('workoutList'); toast('Fortschritt zurückgesetzt');
     } else if (a === 'del') {
-      if (!confirm('Workout löschen?')) return;
+      if (!confirm(t('delete_confirm'))) return;
       S.workouts = S.workouts.filter(x => x.id !== id);
       S.plan = S.plan.filter(x => x !== id);
-      saveS(); go('workoutList'); toast('Gelöscht');
+      saveS(); go('workoutList');
     }
   }));
 }
@@ -811,7 +924,7 @@ function viewWorkoutRun({ workout: w }) {
   const total = w.exercises.reduce((s,e)=>s+e.sets.length,0);
   const done  = w.exercises.reduce((s,e)=>s+e.sets.filter(x=>x.done).length,0);
   const pct   = total ? Math.round(done/total*100) : 0;
-  let h = `<button class="btn-back" id="back">&#8592; Zurück</button>
+  let h = `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
     <div class="run-header">
       <span class="run-title">${esc(w.name)}</span>
       <span id="run-count" style="font-size:.82rem;color:var(--text-muted)">${done}/${total}</span>
@@ -819,27 +932,23 @@ function viewWorkoutRun({ workout: w }) {
     <div class="progress-wrap"><div class="progress-bar" id="run-bar" style="width:${pct}%"></div></div>`;
   w.exercises.forEach((ex, ei) => {
     const mod = S.modules.find(x => x.id === ex.moduleId);
-    const mname = mod ? mod.name : '(gelöscht)';
+    const mname = mod ? mod.name : '';
     h += `<div class="card">
-      <div class="card-header">
-        <span class="card-title">${esc(mname)}</span>
-        ${mod ? `<span class="badge ${mod.type==='timer'?'badge-timer':'badge-ex'}">${mod.type==='timer'?'Timer':'Übung'}</span>` : ''}
-      </div>
+      <div class="card-header"><span class="card-title">${esc(mname)}</span></div>
       ${ex.intensity ? `<div class="card-info" style="font-weight:600">${esc(ex.intensity)}</div>` : ''}
       ${ex.note ? `<div class="note-box">${esc(ex.note)}</div>` : ''}
       ${mod?.type==='exercise'&&mod.config.imageBase64 ? `<img class="img-preview" src="${mod.config.imageBase64}" alt="">` : ''}
-      ${mod?.type==='exercise'&&mod.config.description ? `<div class="card-info" style="margin-top:8px">${esc(mod.config.description)}</div>` : ''}
       <div style="margin-top:10px">`;
     ex.sets.forEach((set, si) => {
       h += `<div class="set-row">
         <input type="checkbox" class="set-cb" data-ei="${ei}" data-si="${si}" ${set.done?'checked':''}>
-        <span class="set-label${set.done?' done':''}">Satz ${set.index}</span>
+        <span class="set-label${set.done?' done':''}"># ${set.index}</span>
         ${mod?.type==='timer' ? `<button class="btn-timer" data-modid="${mod.id}" data-wid="${w.id}">&#9654; Timer</button>` : ''}
       </div>`;
     });
     h += `</div></div>`;
   });
-  h += `<button class="btn-primary" id="finish-workout" style="margin-top:20px">Workout abschließen</button>`;
+  h += `<button class="btn-primary" id="finish-workout" style="margin-top:20px">${t('finish_workout')}</button>`;
   return h;
 }
 function bindWorkoutRun({ workout: w }) {
@@ -865,14 +974,11 @@ function bindWorkoutRun({ workout: w }) {
   document.getElementById('finish-workout').addEventListener('click', () => {
     const idx = S.plan.indexOf(w.id);
     if (idx !== -1) {
-      // Rotate Plan: remove and push to end
       S.plan.splice(idx, 1);
       S.plan.push(w.id);
-      // Optional: reset workout progress when finished in plan
       const sw = S.workouts.find(x => x.id === w.id);
       if (sw) sw.exercises.forEach(e => e.sets.forEach(s => s.done = false));
       saveS();
-      toast('Plan aktualisiert: Nächstes Workout rückt nach');
       go('plan');
     } else {
       go('workoutList');
@@ -882,15 +988,14 @@ function bindWorkoutRun({ workout: w }) {
 
 // ── VIEW: PLAN ──────────────────────────────────────────────────
 function viewPlan() {
-  let h = `<div class="view-header"><span class="view-title">Trainings-Plan (Queue)</span></div>`;
+  let h = `<div class="view-header"><span class="view-title">${t('plan')}</span></div>`;
   if (!S.plan.length) {
     h += `<div class="empty-state"><div class="empty-icon">&#128197;</div>
-      <p>Dein Plan ist leer.<br>Füge Workouts aus der Liste hinzu.</p>
-      <button class="btn-secondary" onclick="go('workoutList')">Workouts ansehen</button></div>`;
+      <p>${t('plan_empty')}</p>
+      <button class="btn-secondary" onclick="go('workoutList')">${t('workouts')}</button></div>`;
     return h;
   }
-  h += `<p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">
-    Das oberste Workout ist als Nächstes dran. Nach Abschluss wandert es ans Ende.</p>`;
+  h += `<p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">${t('plan_desc')}</p>`;
   
   S.plan.forEach((id, idx) => {
     const w = S.workouts.find(x => x.id === id);
@@ -900,11 +1005,11 @@ function viewPlan() {
       <div class="plan-order">${idx + 1}</div>
       <div class="plan-info">
         <div class="plan-name">${esc(w.name)}</div>
-        <div class="plan-meta">${w.exercises.length} Übungen</div>
+        <div class="plan-meta">${w.exercises.length}</div>
       </div>
       <div class="plan-actions">
-        ${isFirst ? `<button class="btn-sm ctrl-start" data-id="${w.id}" data-a="run" style="color:#fff">&#9654; Start</button>` : ''}
-        <button class="btn-sm btn-del" data-id="${id}" data-a="remove" title="Aus Plan entfernen">×</button>
+        ${isFirst ? `<button class="btn-sm ctrl-start" data-id="${w.id}" data-a="run" style="color:#fff">&#9654;</button>` : ''}
+        <button class="btn-sm btn-del" data-id="${id}" data-a="remove">×</button>
       </div>
     </div>`;
   });
@@ -917,33 +1022,17 @@ function bindPlan() {
       const w = S.workouts.find(x => x.id === id); go('workoutRun', { workout: w });
     } else if (a === 'remove') {
       S.plan = S.plan.filter(x => x !== id);
-      saveS(); go('plan'); toast('Vom Plan entfernt');
+      saveS(); go('plan');
     }
   }));
 }
 
 // ── VIEW: PRIVACY ────────────────────────────────────────────────
 function viewPrivacy() {
-  return `<button class="btn-back" id="back">&#8592; Zurück</button>
-  <div class="view-header"><span class="view-title">Datenschutz & Technologie</span></div>
+  return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
+  <div class="view-header"><span class="view-title">${t('privacy_title')}</span></div>
   <div class="card" style="line-height:1.6; font-size:.9rem">
-    <p><strong>100% Lokal & Privat</strong><br>
-    Diese App wurde mit Fokus auf Datenschutz entwickelt. Es gibt keinen Server, der deine Daten empfängt, speichert oder analysiert.</p>
-    
-    <p style="margin-top:12px"><strong>Wo liegen meine Daten?</strong><br>
-    Alle Module, Workouts und Pläne werden ausschließlich im <em>LocalStorage</em> deines eigenen Browsers gespeichert. Das bedeutet: Die Daten verlassen dein Gerät nie, außer du exportierst sie aktiv selbst.</p>
-    
-    <p style="margin-top:12px"><strong>Tracking & Cookies</strong><br>
-    Diese App verwendet keine Tracking-Tools (wie Google Analytics), keine Werbe-Cookies und keine externen Schriftarten oder Scripte von Drittanbietern.</p>
-    
-    <p style="margin-top:12px"><strong>Berechtigungen</strong><br>
-    - <em>Speicher:</em> Um deine Übungen lokal zu sichern.<br>
-    - <em>Audio:</em> Um die Timer-Signale abzuspielen.<br>
-    - <em>Wake Lock:</em> Verhindert, dass der Bildschirm während eines Timers ausgeht (nur aktiv, wenn der Timer läuft).<br>
-    - <em>Teilen:</em> Ermöglicht dir den Export deiner Daten über das System-Menü.</p>
-    
-    <p style="margin-top:12px"><strong>Open Source</strong><br>
-    Der Code ist transparent und kann jederzeit auf GitHub eingesehen werden.</p>
+    <p>${t('privacy_text')}</p>
   </div>`;
 }
 function bindPrivacy() {
@@ -953,24 +1042,24 @@ function bindPrivacy() {
 // ── VIEW: TIMER RUN ──────────────────────────────────────────────
 function buildReps(mod) {
   const { exerciseDuration, pauseDuration, sets } = mod.config;
-  const r = [{ Time: 3, Exercises: 'Start' }];
+  const r = [{ Time: 3, Exercises: t('start') }];
   for (let i = 0; i < sets; i++) {
     r.push({ Time: exerciseDuration, Exercises: mod.name });
     if (i < sets - 1 && pauseDuration > 0)
-      r.push({ Time: pauseDuration, Exercises: 'Pause' });
+      r.push({ Time: pauseDuration, Exercises: t('pause') });
   }
   return r;
 }
 
 function viewTimerRun({ mod }) {
-  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  return `<button class="btn-back" id="back">&#8592; ${t('back')}</button>
   <div class="timer-view">
     <div class="timer-display">
       <div class="digital-time" id="dt">00:00</div>
       <canvas id="tc" width="200" height="200"></canvas>
     </div>
     <div class="timer-controls">
-      <button class="btn-ctrl ctrl-start" id="t-start">Start</button>
+      <button class="btn-ctrl ctrl-start" id="t-start">${t('start')}</button>
       <button class="btn-ctrl ctrl-pause" id="t-pause">Pause</button>
       <button class="btn-ctrl ctrl-stop"  id="t-stop">Stopp</button>
       <button class="btn-ctrl ctrl-reset" id="t-reset">Reset</button>
@@ -1003,10 +1092,10 @@ function bindTimerRun({ mod, returnTo }) {
 
   function renderPhases() {
     phBody.innerHTML = reps.map((r, i) => {
-      const isPause = r.Exercises.toLowerCase() === 'pause';
+      const isPause = r.Exercises.toLowerCase() === t('pause').toLowerCase();
       return `<tr class="prow" data-i="${i}" style="background:${isPause?'var(--pause-color)':'var(--work-color)'}">
         <td>${r.Time}s</td><td>${esc(r.Exercises)}</td>
-        <td id="ps-${i}">soon</td></tr>`;
+        <td id="ps-${i}">${t('soon')}</td></tr>`;
     }).join('');
   }
   renderPhases();
@@ -1017,8 +1106,8 @@ function bindTimerRun({ mod, returnTo }) {
     const elapsed = total - remaining;
     const ang = (2 * Math.PI) / total;
     const sa  = -Math.PI / 2;
-    const isPause = phaseName.toLowerCase() === 'pause';
-    const isStart = phaseName.toLowerCase() === 'start';
+    const isPause = phaseName.toLowerCase() === t('pause').toLowerCase();
+    const isStart = phaseName.toLowerCase() === t('start').toLowerCase();
     const exColors = ['#e53935', '#a5d6a7', '#2e7d32'];
 
     for (let i = 0; i < total; i++) {
@@ -1067,9 +1156,9 @@ function bindTimerRun({ mod, returnTo }) {
       const st  = document.getElementById(`ps-${i}`);
       if (!row||!st) return;
       row.classList.remove('active-p','done-p');
-      if (i < idx)      { row.classList.add('done-p');   st.textContent = 'done'; }
-      else if (i===idx) { row.classList.add('active-p'); st.textContent = 'aktiv'; }
-      else              { st.textContent = 'soon'; }
+      if (i < idx)      { row.classList.add('done-p');   st.textContent = t('done'); }
+      else if (i===idx) { row.classList.add('active-p'); st.textContent = t('active'); }
+      else              { st.textContent = t('soon'); }
     });
   }
 
@@ -1135,6 +1224,9 @@ loadS();
 // Apply settings
 document.body.setAttribute('data-theme', S.theme);
 themeToggle.checked = (S.theme === 'dark');
+langSelect.value = S.lang;
+document.documentElement.lang = S.lang;
+updateStaticUI();
 volSlider.value = S.volume;
 setVol(S.volume);
 
