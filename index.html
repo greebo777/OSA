@@ -349,7 +349,36 @@ function go(view, params = {}) {
   const [render, bind] = map[view] || map.home;
   el.innerHTML = render(params);
   bind(params);
+  
+  // Push state for back-button handling (prevent app close)
+  if (history.state?.view !== view) {
+    history.pushState({ view, params }, '', '');
+  }
 }
+
+// Handle Back-Button
+window.addEventListener('popstate', (e) => {
+  if (e.state && e.state.view) {
+    // If we have a state, just go there
+    go(e.state.view, e.state.params);
+  } else {
+    // If no state (trying to exit), ask or stay
+    if (confirm('Möchtest du die App wirklich verlassen? Dein Fortschritt könnte verloren gehen.')) {
+      history.back();
+    } else {
+      history.pushState({ view: 'home' }, '', '');
+      go('home');
+    }
+  }
+});
+
+// Prevent accidental reload/close during active session
+window.addEventListener('beforeunload', (e) => {
+  if (activeTimer?.running) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 // ── DRAWER ──────────────────────────────────────────────────────
 const overlayEl = document.getElementById('overlay');
