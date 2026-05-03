@@ -28,8 +28,10 @@
       --shadow: 0 2px 8px rgba(0,0,0,0.40);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
+    html { height: 100%; }
+    body { min-height: 100%; font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text); transition: background .3s, color .3s;
+      display: flex; flex-direction: column; }
 
     /* NAV */
     .nav { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h);
@@ -250,6 +252,7 @@
   <button class="drawer-item" id="m-add-workout">&#43;&nbsp; Workout erstellen</button>
   <button class="drawer-item" id="m-workouts">&#128203;&nbsp; Workouts</button>
   <button class="drawer-item" id="m-plan">&#128197;&nbsp; Plan / Queue</button>
+  <button class="drawer-item" id="m-privacy">&#128712;&nbsp; Datenschutz</button>
   <button class="drawer-item" id="m-home">&#127968;&nbsp; Module</button>
   <div class="drawer-setting">
     <div class="drawer-setting-label">
@@ -340,6 +343,7 @@ function go(view, params = {}) {
     workoutList:   [viewWorkoutList,   bindWorkoutList],
     workoutRun:    [viewWorkoutRun,    bindWorkoutRun],
     plan:          [viewPlan,          bindPlan],
+    privacy:       [viewPrivacy,       bindPrivacy],
     timerRun:      [viewTimerRun,      bindTimerRun],
   };
   const [render, bind] = map[view] || map.home;
@@ -361,6 +365,7 @@ document.getElementById('m-home').addEventListener('click',       () => drawerGo
 document.getElementById('m-add-workout').addEventListener('click',() => drawerGo('workoutCreate'));
 document.getElementById('m-workouts').addEventListener('click',   () => drawerGo('workoutList'));
 document.getElementById('m-plan').addEventListener('click',       () => drawerGo('plan'));
+document.getElementById('m-privacy').addEventListener('click',    () => drawerGo('privacy'));
 document.getElementById('m-download').addEventListener('click',   () => { closeDrawer(); shareApp(); });
 document.getElementById('m-upload').addEventListener('click',     () => { closeDrawer(); document.getElementById('file-input').click(); });
 
@@ -804,6 +809,34 @@ function bindPlan() {
       saveS(); go('plan'); toast('Vom Plan entfernt');
     }
   }));
+}
+
+// ── VIEW: PRIVACY ────────────────────────────────────────────────
+function viewPrivacy() {
+  return `<button class="btn-back" id="back">&#8592; Zurück</button>
+  <div class="view-header"><span class="view-title">Datenschutz & Technologie</span></div>
+  <div class="card" style="line-height:1.6; font-size:.9rem">
+    <p><strong>100% Lokal & Privat</strong><br>
+    Diese App wurde mit Fokus auf Datenschutz entwickelt. Es gibt keinen Server, der deine Daten empfängt, speichert oder analysiert.</p>
+    
+    <p style="margin-top:12px"><strong>Wo liegen meine Daten?</strong><br>
+    Alle Module, Workouts und Pläne werden ausschließlich im <em>LocalStorage</em> deines eigenen Browsers gespeichert. Das bedeutet: Die Daten verlassen dein Gerät nie, außer du exportierst sie aktiv selbst.</p>
+    
+    <p style="margin-top:12px"><strong>Tracking & Cookies</strong><br>
+    Diese App verwendet keine Tracking-Tools (wie Google Analytics), keine Werbe-Cookies und keine externen Schriftarten oder Scripte von Drittanbietern.</p>
+    
+    <p style="margin-top:12px"><strong>Berechtigungen</strong><br>
+    - <em>Speicher:</em> Um deine Übungen lokal zu sichern.<br>
+    - <em>Audio:</em> Um die Timer-Signale abzuspielen.<br>
+    - <em>Wake Lock:</em> Verhindert, dass der Bildschirm während eines Timers ausgeht (nur aktiv, wenn der Timer läuft).<br>
+    - <em>Teilen:</em> Ermöglicht dir den Export deiner Daten über das System-Menü.</p>
+    
+    <p style="margin-top:12px"><strong>Open Source</strong><br>
+    Der Code ist transparent und kann jederzeit auf GitHub eingesehen werden.</p>
+  </div>`;
+}
+function bindPrivacy() {
+  document.getElementById('back').addEventListener('click', () => go('home'));
 }
 
 // ── VIEW: TIMER RUN ──────────────────────────────────────────────
